@@ -22,6 +22,22 @@ done
 [ "$(id -u)" -ne 0 ] || { echo "Run as your normal user, not root." >&2; exit 1; }
 
 changed=0 failed=0
+
+# Drop PROGRAM from ~/.apport-ignore.xml; delete the file if nothing else is left
+unignore_apport() {
+  python3 - "$HOME/.apport-ignore.xml" "$1" <<'PY'
+import os, sys, xml.dom.minidom as md
+path, prog = sys.argv[1], sys.argv[2]
+dom = md.parse(path)
+for e in dom.getElementsByTagName("ignore"):
+    if e.getAttribute("program") == prog:
+        e.parentNode.removeChild(e)
+if dom.getElementsByTagName("ignore"):
+    open(path, "w").write(dom.toxml())
+else:
+    os.remove(path)
+PY
+}
 act() {  # act DESCRIPTION COMMAND...
   local what="$1"; shift
   if [ "$dry" -eq 1 ]; then echo "would: $what"; return; fi
@@ -46,7 +62,14 @@ else
                fi ;;
       sysfile) [ -e "$a" ] && act "remove $a (sudo)" sudo rm -f "$a" ;;
       dir)     [ -d "$a" ] && [ -z "$(ls -A "$a")" ] && act "remove empty dir $a" rmdir "$a" ;;
-      rundir)  [ -e "$a" ] && act "remove Hyprland runtime data $a" rm -rf "$a" ;;
+      rundir)  [ -e "$a" ] && act "remove runtime data $a" rm -rf "$a" ;;
+      divert)  if dpkg-divert --list "$a" | grep -q .; then
+                 act "restore $(basename "$a") to the login screen (sudo)" \
+                   sudo dpkg-divert --local --rename --divert "$a.lcars-hidden" --remove "$a"
+               fi ;;
+      apportignore)
+               [ -f "$HOME/.apport-ignore.xml" ] &&
+                 act "remove $a from ~/.apport-ignore.xml" unignore_apport "$a" ;;
       pkg)     pkgs+=("$a") ;;
     esac
   done < <(tac "$MANIFEST")

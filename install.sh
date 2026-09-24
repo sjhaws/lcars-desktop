@@ -12,6 +12,12 @@
 #   6. /usr/share/wayland-sessions/lcars.desktop — the only file outside $HOME
 #   7. Hyprland's runtime dirs (~/.local/share/hyprland, ~/.cache/hyprland) are
 #      recorded if they don't exist yet, so rollback can remove what Hyprland creates
+#   8. The stock "Hyprland" login entries are hidden with `dpkg-divert --local`,
+#      so the only way into Hyprland from GDM is the crash-guarded LCARS session
+#   9. ~/.apport-ignore.xml gets an entry for /usr/bin/Hyprland: Hyprland 0.53
+#      segfaults on every exit, which would otherwise pop up a crash dialog
+#  10. The crash guard's one-time notice (~/.config/autostart/lcars-fallback-notice.desktop)
+#      is recorded so rollback removes it if it never got shown
 # It never touches GDM, GNOME or /etc, and does not make LCARS the default session.
 #
 # Usage: ./install.sh [--no-timeshift] [--deploy]
@@ -25,6 +31,9 @@ SESSION_FILE=/usr/share/wayland-sessions/lcars.desktop
 PACKAGES=(hyprland xdg-desktop-portal-hyprland grim)
 PKG_RECORD="$HOME/lcars-backups/lcars-packages.txt"   # survives rollback, for a later --purge
 RUNTIME_DIRS=("$HOME/.local/share/hyprland" "$HOME/.cache/hyprland")
+HIDE_SESSIONS=(/usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/hyprland-uwsm.desktop)
+APPORT_IGNORE="$HOME/.apport-ignore.xml"
+FALLBACK_NOTICE="$HOME/.config/autostart/lcars-fallback-notice.desktop"   # written by lcars-session
 CONFIG_LINKS=(hypr)               # ~/.config/<name> -> $REPO/<name>
 
 timeshift=1 deploy=0
@@ -121,6 +130,42 @@ for d in "${RUNTIME_DIRS[@]}"; do
   for m in "${missing[@]}"; do record "dir	$m"; done
   record "rundir	$d"
 done
+
+# ---- 8. hide the unguarded stock Hyprland sessions -------------------------
+for f in "${HIDE_SESSIONS[@]}"; do
+  if [ -e "$f" ] && ! dpkg-divert --list "$f" | grep -q .; then
+    sudo dpkg-divert --local --rename --divert "$f.lcars-hidden" --add "$f"
+    record "divert	$f"
+    say "Hid $(basename "$f") from the login screen"
+  fi
+done
+
+# ---- 9. apport: ignore Hyprland's crash-on-exit ------------------------------
+# lcars-session still logs every real crash. mtime far in the future so the
+# entry keeps matching after Hyprland package upgrades.
+added="$(python3 - "$APPORT_IGNORE" <<'PY'
+import os, sys, xml.dom.minidom as md
+path, prog = sys.argv[1], "/usr/bin/Hyprland"
+dom = md.parse(path) if os.path.isfile(path) else md.parseString("<apport/>")
+if any(e.getAttribute("program") == prog for e in dom.getElementsByTagName("ignore")):
+    print("no")
+else:
+    e = dom.createElement("ignore")
+    e.setAttribute("program", prog)
+    e.setAttribute("mtime", "4102444800")
+    dom.documentElement.appendChild(e)
+    open(path, "w").write(dom.toxml())
+    print("yes")
+PY
+)"
+if [ "$added" = yes ]; then
+  record "apportignore	/usr/bin/Hyprland"
+  say "Crash dialogs for Hyprland disabled in $APPORT_IGNORE"
+fi
+
+# ---- 10. crash-guard notice (created later by lcars-session, if ever) ---------
+[ -d "$(dirname "$FALLBACK_NOTICE")" ] || record "dir	$(dirname "$FALLBACK_NOTICE")"
+record "rundir	$FALLBACK_NOTICE"
 
 # ---- 6. login session entry ------------------------------------------------
 say "Adding LCARS to the login screen ($SESSION_FILE)"

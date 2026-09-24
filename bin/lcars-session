@@ -21,6 +21,7 @@ STATE="${XDG_STATE_HOME:-$HOME/.local/state}/lcars"
 LOG="$STATE/session.log"
 CRASHES="$STATE/crashes"          # one epoch timestamp per crash
 NOTE="$HOME/LCARS-NOTE.txt"
+NOTICE="$HOME/.config/autostart/lcars-fallback-notice.desktop"   # one-time GNOME notification
 EXIT_MARKER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/lcars-exit-requested"
 MAX_CRASHES=3
 WINDOW=300                        # seconds
@@ -48,6 +49,19 @@ You are in the stock Ubuntu session instead.
 - To remove LCARS completely: lcars-rollback
 - Session log: $LOG
 NOTE
+  # One-time on-screen notice: GNOME runs this autostart entry once, and it deletes itself.
+  # GNOME 50 ignores X-GNOME-Autostart-Delay and may run it before the notification
+  # service exists, so it retries for up to a minute.
+  mkdir -p "$(dirname "$NOTICE")"
+  cat > "$NOTICE" <<DESKTOP
+[Desktop Entry]
+Type=Application
+Name=LCARS fallback notice
+OnlyShowIn=GNOME;
+NoDisplay=true
+Exec=sh -c 'rm -f "\$HOME/.config/autostart/lcars-fallback-notice.desktop"; i=0; until notify-send -u critical -a LCARS "LCARS did not start" "$why. You are in the Ubuntu session. Details: ~/LCARS-NOTE.txt"; do i=\$((i + 1)); [ \$i -ge 30 ] && break; sleep 2; done'
+DESKTOP
+
   # Present ourselves as the stock "ubuntu" session so GNOME loads its normal mode
   export XDG_CURRENT_DESKTOP=ubuntu:GNOME XDG_SESSION_DESKTOP=ubuntu DESKTOP_SESSION=ubuntu
   export GNOME_SHELL_SESSION_MODE=ubuntu

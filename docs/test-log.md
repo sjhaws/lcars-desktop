@@ -74,3 +74,17 @@ Snapshots: `clean-install` → `pre-deploy` (+ Timeshift configured, rsync mode 
 4. **`lcars-rollback` is on `PATH` only in login shells** (console, interactive SSH). In a one-off SSH command use `~/.local/bin/lcars-rollback`.
 5. **Unguarded "Hyprland" entry in the GDM gear menu** comes from Ubuntu's package. [Hide with `dpkg-divert`; rollback restores]
 6. VM test user: `steven` / `lcars`, passwordless sudo (VM only).
+
+## 2026-09-24 — Phase 1 follow-up: Steven's four decisions
+
+Retested from `pre-deploy` (install) and `installed` (routes, rollback).
+
+| Change | Test | Result |
+| --- | --- | --- |
+| Hide stock Hyprland sessions (`dpkg-divert --local --rename`, `hyprland.desktop` and `hyprland-uwsm.desktop` → `*.lcars-hidden`) | GDM gear menu | **PASS**: only LCARS and Ubuntu listed |
+| Apport ignore for `/usr/bin/Hyprland` in `~/.apport-ignore.xml` (mtime 4102444800 so it survives upgrades; merged into an existing file if present) | Route 1 exit (status 139), then Ubuntu login | **PASS**: no `/var/crash` file written, no crash dialog in GNOME |
+| One-time fallback notification (self-deleting `~/.config/autostart` entry) | Route 2 (3 crashes) | **PASS** after a fix: GNOME 50 ignores `X-GNOME-Autostart-Delay` and ran the entry before its notification service existed; it now retries every 2 s for up to 60 s. Notification shown: "LCARS did not start — Hyprland crashed 3 times in the last 5 minutes…" |
+| Freeze handling | — | Unchanged by decision: watchdog only, no `/etc` changes |
+| `lcars-rollback --purge` after use | Fingerprint + `/etc` + `/var/lib/dpkg/diversions` vs pre-install | **PASS**: 13 changes, 0 problems; diversions removed before the purge, apport file removed (install created it), no autostart dir left. Remaining differences as before: `~/lcars-backups/`, default session `"ubuntu"`, `~/.local/share` kept because the login itself put files in it |
+
+System-level changes made by `install.sh` are now: apt packages, `/usr/share/wayland-sessions/lcars.desktop`, and two local dpkg diversions. Nothing under `/etc`.
