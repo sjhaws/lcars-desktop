@@ -7,7 +7,8 @@ border-color={{role.borderActive|color|#}}
 border-size={{shape.border}}
 border-radius={{shape.rounding}}
 padding=12,16
-margin={{shape.gapsOut}}
+# clear of the LCARS top bar
+margin={{frame.armHeight|plus:34}},{{shape.gapsOut}}
 width=420
 anchor=top-right
 default-timeout=8000

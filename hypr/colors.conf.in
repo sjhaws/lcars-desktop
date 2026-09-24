@@ -13,6 +13,7 @@ $lcars_border_inactive = rgba({{role.borderInactive|color|hex}}{{role.borderInac
 $lcars_group_active    = rgb({{role.groupActive|color|hex}})
 $lcars_group_inactive  = rgb({{role.groupInactive|color|hex}})
 
+$lcars_repo     = {{repo}}
 $lcars_font     = {{font.family}}
 $lcars_border   = {{shape.border}}
 $lcars_rounding = {{shape.rounding}}

@@ -8,22 +8,21 @@ with optional filters:
     {{color.orange|#}}        -> #ff9900
     {{role.borderInactive|color|hex}}            role names resolve to a color
     {{role.borderInactiveAlpha|alpha}}  -> 73    (0..1 -> two hex digits)
-Also writes the wallpaper PNG (pure Python, no dependencies).
+    {{frame.armHeight|plus:12}}         -> 40    (add a number)
+    {{repo}}                            -> absolute path of this repo
 
 Usage: tools/lcars-gen            (run by install.sh; rerun after editing tokens)
 """
-import json, re, struct, sys, zlib
+import json, re, sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
 TOKENS = json.loads((REPO / "tokens/palette.json").read_text())
 TEMPLATES = {  # template -> output (outputs are gitignored)
     "hypr/colors.conf.in": "hypr/generated/colors.conf",
-    "hypr/hyprpaper.conf.in": "hypr/generated/hyprpaper.conf",
     "fuzzel/fuzzel.ini.in": "fuzzel/fuzzel.ini",
     "mako/config.in": "mako/config",
 }
-WALLPAPER = "hypr/generated/wallpaper.png"
 
 
 def lookup(path):
@@ -47,6 +46,8 @@ def render(text):
                 value = value.lstrip("#").lower()
             elif f == "#":
                 value = "#" + value.lstrip("#").lower()
+            elif f.startswith("plus:"):
+                value = int(value) + int(f[5:])
             elif f == "alpha":
                 value = f"{round(float(value) * 255):02x}"
             else:
@@ -55,85 +56,12 @@ def render(text):
     return re.sub(r"\{\{([^}]+)\}\}", sub, text)
 
 
-def rgb(name, dim=1.0):
-    h = TOKENS["color"][name].lstrip("#")
-    return tuple(round(int(h[i:i + 2], 16) * dim) for i in (0, 2, 4))
-
-
-# ---- wallpaper: black with one dim LCARS elbow and bar segments -------------
-def wallpaper(w=1920, h=1080, ss=3):
-    """Original artwork. Shapes are defined in units of the screen height."""
-    u = h / 1080
-    dim = TOKENS["role"]["wallpaperDim"]
-    img = bytearray(w * h * 3)  # starts black
-    X0, Y0 = 1240 * u, 690 * u           # elbow's outer corner
-    SIDE, BAR = 56 * u, 14 * u           # sidebar width, bar height
-    R, r = 44 * u, 18 * u                # outer and inner corner radii
-    X1, Y1 = w - 40 * u, h - 40 * u      # ends of bar and sidebar
-    GAP = 5 * u
-
-    # (y0, y1, color) segments of the sidebar, (x0, x1, color) of the bar
-    side = [(Y0, Y0 + 170 * u, "orange"), (Y0 + 170 * u + GAP, Y0 + 240 * u, "peach"),
-            (Y0 + 240 * u + GAP, Y1, "lavender")]
-    bar = [(X0, X0 + 330 * u, "orange"), (X0 + 330 * u + GAP, X0 + 450 * u, "periwinkle"),
-           (X0 + 450 * u + GAP, X1, "peach")]
-
-    def elbow_color(x, y):
-        # outer rounded corner
-        if x < X0 + R and y < Y0 + R and (x - X0 - R) ** 2 + (y - Y0 - R) ** 2 > R * R:
-            return None
-        in_side = X0 <= x < X0 + SIDE and Y0 <= y < Y1
-        in_bar = X0 <= x < X1 and Y0 <= y < Y0 + BAR
-        # concave fillet between the thin bar and the thick sidebar
-        in_fillet = (X0 + SIDE <= x < X0 + SIDE + r and Y0 + BAR <= y < Y0 + BAR + r
-                     and (x - X0 - SIDE - r) ** 2 + (y - Y0 - BAR - r) ** 2 > r * r)
-        if not (in_side or in_bar or in_fillet):
-            return None
-        if y >= Y0 + BAR and in_side:        # sidebar: colored by height
-            for a, b, c in side:
-                if a <= y < b:
-                    return c
-            return None
-        if in_fillet:
-            return side[0][2]
-        for a, b, c in bar:                  # bar (and the corner): colored by x
-            if a <= x < b:
-                return c
-        return None
-
-    x_lo, x_hi = int(X0), int(min(w, X1 + 1))
-    for py in range(int(Y0), int(Y1) + 1):
-        for px in range(x_lo, x_hi):
-            acc = [0, 0, 0]
-            hits = 0
-            for sy in range(ss):
-                for sx in range(ss):
-                    x, y = px + (sx + 0.5) / ss, py + (sy + 0.5) / ss
-                    c = elbow_color(x, y)
-                    if c is not None:
-                        col = rgb(c, dim)
-                        acc = [acc[i] + col[i] for i in range(3)]
-                        hits += 1
-            if hits:
-                n = ss * ss
-                i = (py * w + px) * 3
-                img[i:i + 3] = bytes(v // n for v in acc)
-
-    raw = b"".join(b"\x00" + bytes(img[y * w * 3:(y + 1) * w * 3]) for y in range(h))
-    def chunk(t, d):
-        return struct.pack(">I", len(d)) + t + d + struct.pack(">I", zlib.crc32(t + d) & 0xFFFFFFFF)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", w, h, 8, 2, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(raw, 9)) + chunk(b"IEND", b""))
-
-
 def main():
     for src, dst in TEMPLATES.items():
         out = REPO / dst
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text(render((REPO / src).read_text()))
         print(f"generated {dst}")
-    (REPO / WALLPAPER).write_bytes(wallpaper())
-    print(f"generated {WALLPAPER}")
 
 
 if __name__ == "__main__":

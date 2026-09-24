@@ -15,8 +15,7 @@
     "borderInactiveAlpha": 0.45,
     "borderUrgent": "red",
     "groupActive": "orange",
-    "groupInactive": "periwinkle",
-    "wallpaperDim": 0.28
+    "groupInactive": "periwinkle"
   },
   "font": {
     "family": "Antonio",
@@ -28,5 +27,15 @@
     "rounding": 16,
     "gapsIn": 6,
     "gapsOut": 12
+  },
+  "frame": {
+    "sidebarWidth": 150,
+    "padding": 8,
+    "gap": 4,
+    "armHeight": 28,
+    "innerRadius": 14,
+    "outerRadius": 36,
+    "elbowHeight": 90,
+    "segmentHeight": 52
   }
 }
