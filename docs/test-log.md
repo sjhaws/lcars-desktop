@@ -301,3 +301,17 @@ short blocks. The top bar gains a thin divider row of mixed-width blocks (`frame
 **Found while testing:** Hyprland auto-reloaded its config while `tools/lcars-gen` was rewriting
 `colors.conf` → every `$lcars_*` variable failed to parse (config-error banner). `lcars-gen` now
 writes to a temp file and renames it into place.
+
+### Split frame (further toward Steven's reference)
+
+- `shell/Header.qml`: upper elbow (lavender, rounded bottom-left) with a station code from
+  `/etc/hostname` ("LCARS 425" in the VM), the focused app's display name as the title (from the
+  Wayland toplevel's app ID → desktop entry name, e.g. FILES; MAIN DISPLAY when nothing is
+  focused), stardate and time, a red LOCK pill with a centered label, and the thin arm running
+  into mixed-width rules
+- `shell/BottomBar.qml`: the sidebar's foot curves into a bottom rule of blocks ending in the IPv4
+  address ("192 168 122 159"), refreshed every 10 s
+- Readout bar keeps workspaces and CPU/MEM/NET/BAT/VOL; block sizes trimmed so the frame fits 800 px
+- Found: `Hyprland.activeToplevel.lastIpcObject` was empty → `ToplevelManager.activeToplevel.appId`;
+  `HOSTNAME` isn't in the environment → read `/etc/hostname`
+- VM check: no QML warnings, windows tile inside the frame (screenshot)

@@ -1,5 +1,5 @@
-// Top bar: the elbow's horizontal arm, workspaces, then system readouts, stardate,
-// clock and volume. Readouts are LCARS blocks; the volume one is interactive.
+// Readout bar: the main elbow's horizontal arm, workspaces, then system readouts
+// and volume (title, stardate, clock and LOCK are in Header.qml). Readouts are LCARS blocks; the volume one is interactive.
 import QtQuick
 import QtQuick.Layouts
 import Quickshell
@@ -15,19 +15,9 @@ PanelWindow {
     readonly property int pad: Theme.frame.padding
     readonly property int arm: Theme.frame.armHeight
     readonly property int inner: Theme.frame.innerRadius
-    readonly property int divider: Theme.frame.dividerHeight
-    // Room below the arm for the concave corner and the thin divider row
-    implicitHeight: pad + arm + Math.max(inner, Theme.frame.gap * 2 + divider)
+    implicitHeight: pad + arm + inner
     exclusiveZone: implicitHeight
     color: Theme.color.background
-
-    SystemClock { id: clock; precision: SystemClock.Seconds }
-    // Earth-date stardate: 1000 units per year since 1946, one decimal
-    function stardate(d) {
-        const start = new Date(d.getFullYear(), 0, 1)
-        const end = new Date(d.getFullYear() + 1, 0, 1)
-        return ((d.getFullYear() - 1946) * 1000 + 1000 * (d - start) / (end - start)).toFixed(1)
-    }
 
     PwObjectTracker { objects: [Pipewire.defaultAudioSink] }
     readonly property var sink: Pipewire.defaultAudioSink
@@ -64,31 +54,6 @@ PanelWindow {
             width: bar.inner; height: bar.inner
             color: Theme.color.background
             topLeftRadius: bar.inner
-        }
-    }
-
-    // Thin divider row of mixed-width blocks under the arm, like LCARS header rules.
-    // Widths are fractions of the row; one entry (w: 0) takes whatever is left.
-    RowLayout {
-        id: dividerRow
-        anchors { left: parent.left; right: parent.right; top: parent.top
-                  leftMargin: bar.inner + Theme.frame.gap; rightMargin: bar.pad
-                  topMargin: bar.pad + bar.arm + Theme.frame.gap }
-        height: bar.divider
-        spacing: Theme.frame.gap
-        Repeater {
-            model: [
-                { w: 0.05, c: "orange" }, { w: 0.16, c: "lavender" }, { w: 0.02, c: "peach" },
-                { w: 0.09, c: "periwinkle" }, { w: 0, c: "lavender" }, { w: 0.04, c: "orange" },
-                { w: 0.12, c: "peach" }, { w: 0.03, c: "red" }, { w: 0.07, c: "periwinkle" }
-            ]
-            Rectangle {
-                required property var modelData
-                Layout.fillHeight: true
-                Layout.fillWidth: modelData.w === 0
-                Layout.preferredWidth: modelData.w * dividerRow.width
-                color: Theme.named(modelData.c)
-            }
         }
     }
 
@@ -130,20 +95,6 @@ PanelWindow {
             visible: bar.hasBattery
             label: "BAT " + bar.batteryPercent + "%" + (bar.battery?.state === UPowerDeviceState.Charging ? "+" : "")
             fill: bar.batteryPercent <= 15 && UPower.onBattery ? Theme.color.red : Theme.color.peach
-        }
-        Readout {
-            label: "SD " + bar.stardate(clock.date)
-            fill: Theme.color.peach
-        }
-        Readout {
-            label: Qt.formatDateTime(clock.date, "ddd HH:mm")
-            fill: Theme.color.orange
-        }
-        Readout {
-            label: "LOCK"
-            hint: "Super+L"
-            fill: Theme.color.red
-            onActivated: Quickshell.execDetached(["loginctl", "lock-session"])
         }
         Readout {
             label: bar.muted ? "MUTED" : "VOL " + bar.volume + "%"

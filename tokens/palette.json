@@ -35,10 +35,14 @@
     "armHeight": 28,
     "innerRadius": 14,
     "outerRadius": 36,
-    "elbowHeight": 90,
-    "segmentHeight": 52,
-    "segmentShort": 32,
-    "segmentTall": 88,
-    "dividerHeight": 8
+    "elbowHeight": 80,
+    "segmentHeight": 46,
+    "segmentShort": 28,
+    "segmentTall": 76,
+    "dividerHeight": 8,
+    "headerTitle": 40,
+    "headerArm": 12,
+    "headerRadius": 30,
+    "footHeight": 22
   }
 }

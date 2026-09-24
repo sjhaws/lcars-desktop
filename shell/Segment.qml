@@ -7,6 +7,7 @@ Rectangle {
     property string label: ""
     property string hint: ""
     property color fill: Theme.color.orange
+    property bool centerLabel: false      // pills center their label
     readonly property real labelWidth: text.implicitWidth
     // Short blocks show only the label
     readonly property bool showHint: hint.length > 0 && height >= 44
@@ -19,7 +20,11 @@ Rectangle {
 
     Text {
         id: text
-        anchors { right: parent.right; bottom: parent.bottom; rightMargin: 10; bottomMargin: seg.showHint ? 16 : 2 }
+        anchors.right: seg.centerLabel ? undefined : parent.right
+        anchors.bottom: seg.centerLabel ? undefined : parent.bottom
+        anchors.centerIn: seg.centerLabel ? parent : undefined
+        anchors.rightMargin: 10
+        anchors.bottomMargin: seg.showHint ? 16 : 2
         text: seg.label.toUpperCase()
         color: Theme.color.textOnColor
         font { family: Theme.font; pixelSize: 20; weight: Theme.fontWeight }

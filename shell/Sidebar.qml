@@ -72,12 +72,12 @@ PanelWindow {
             }
         }
 
-        // Rounded foot of the sidebar
+        // Rounded foot: the lower elbow that curves into the bottom rule
         Rectangle {
             Layout.fillWidth: true
-            Layout.preferredHeight: Theme.frame.armHeight
+            Layout.preferredHeight: Theme.frame.footHeight + 18
             color: Theme.color.orange
-            bottomLeftRadius: Theme.frame.armHeight
+            bottomLeftRadius: Theme.frame.headerRadius
         }
     }
 }

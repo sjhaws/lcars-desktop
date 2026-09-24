@@ -10,9 +10,12 @@ ShellRoot {
         Scope {
             id: perScreen
             required property var modelData
-            // Order matters: the sidebar reserves the left edge first, so the
-            // top bar is placed to its right and the sidebar keeps full height
+            // Order matters: the header reserves the top edge first, then the
+            // sidebar the left edge below it; the bottom rule and the readout bar
+            // go to the sidebar's right
+            Header { screen: perScreen.modelData }
             Sidebar { screen: perScreen.modelData }
+            BottomBar { screen: perScreen.modelData }
             TopBar { screen: perScreen.modelData }
         }
     }

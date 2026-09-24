@@ -37,9 +37,13 @@
 Every sidebar segment is a button: Terminal, Browser, Files, Editor, Monitor, Settings,
 two custom buttons, Apps (the launcher) and Exit.
 
-The top bar's numbers switch workspaces (more appear when you use workspaces above 5).
+The frame is split like classic LCARS panels: a **header** (lavender elbow with a station code,
+the focused app's name, stardate and time, and a LOCK pill), the main frame (orange elbow,
+sidebar, readout bar), and a **bottom rule** ending in the machine's IP address.
+
+The readout bar's numbers switch workspaces (more appear when you use workspaces above 5).
 Its readouts show CPU, memory, network (WIFI / WIRED / VPN / OFFLINE, red when offline),
-battery on laptops (`+` while charging, red at 15 % or less on battery), stardate and time.
+battery on laptops (`+` while charging, red at 15 % or less on battery).
 The VOL block mutes on click and changes volume with the scroll wheel.
 
 Notifications appear top right: red cap = critical (stays until clicked), orange = normal,
