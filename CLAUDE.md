@@ -6,6 +6,7 @@ Full plan, decisions and roadmap: `docs/plan.md`. Read it at the start of every 
 ## Hard safety rules
 
 1. Never run `install.sh`, change desktop settings, or install LCARS packages on the host machine. All testing happens in the test VM over SSH, until Steven explicitly starts Phase 5 (deploy).
+   - 2026-09-24: Steven approved the **real-hardware test** on the host (`docs/hardware-test.md`). Steven runs `./install.sh --deploy` himself (it needs his password); Claude only reads logs and `lcars-report` output on the host, and changes code in the repo. Deploying for daily use is still a separate Phase 5 decision.
 2. Take a VM snapshot before every install test. Restore it after any failed test.
 3. Never modify GDM, GNOME, or files under `/etc` beyond what `install.sh` documents. The stock "Ubuntu" session must always keep working.
 4. Every change `install.sh` makes must be undone by `bin/lcars-rollback`. Add both together, in the same commit.
