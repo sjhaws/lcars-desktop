@@ -33,6 +33,7 @@ Full plan, decisions and roadmap: `docs/plan.md`. Read it at the start of every 
 - Frozen compositor: rely on the lcars-session hang watchdog (~45 s); do not enable Magic SysRq or touch `/etc`
 - Crash-guard fallback: one-time GNOME notification via a self-deleting `~/.config/autostart` entry, plus `~/LCARS-NOTE.txt`
 - Stock "Hyprland" GDM entry: hide with `dpkg-divert` (install.sh), restore with `dpkg-divert --remove` (rollback)
+- hypridle and hyprpolkitagent user services: `systemctl --global disable` (install.sh; the only /etc change), `--global enable` (rollback). Confirmed 2026-09-24
 
 ## Host machine
 

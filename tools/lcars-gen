@@ -20,6 +20,7 @@ REPO = Path(__file__).resolve().parent.parent
 TOKENS = json.loads((REPO / "tokens/palette.json").read_text())
 TEMPLATES = {  # template -> output (outputs are gitignored)
     "hypr/colors.conf.in": "hypr/generated/colors.conf",
+    "hypr/hyprlock.conf.in": "hypr/generated/hyprlock.conf",
 }
 
 

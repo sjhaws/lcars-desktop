@@ -113,6 +113,12 @@ PanelWindow {
             fill: Theme.color.orange
         }
         Readout {
+            label: "LOCK"
+            hint: "Super+L"
+            fill: Theme.color.red
+            onActivated: Quickshell.execDetached(["loginctl", "lock-session"])
+        }
+        Readout {
             label: bar.muted ? "MUTED" : "VOL " + bar.volume + "%"
             fill: bar.muted ? Theme.color.red : Theme.color.lavender
             topRightRadius: height / 2

@@ -14,7 +14,7 @@
 #   5b. Quickshell (the LCARS shell toolkit, not packaged for Ubuntu) is built from
 #      a pinned release into ~/.local; every installed file is recorded. Its build
 #      dependencies are ordinary apt packages, recorded like the others
-#   6. /usr/share/wayland-sessions/lcars.desktop — the only file outside $HOME
+#   6. /usr/share/wayland-sessions/lcars.desktop
 #   7. Hyprland's runtime dirs (~/.local/share/hyprland, ~/.cache/hyprland) are
 #      recorded if they don't exist yet, so rollback can remove what Hyprland creates
 #   8. The stock "Hyprland" login entries are hidden with `dpkg-divert --local`,
@@ -24,12 +24,16 @@
 #      goes away, which would otherwise pop up crash dialogs in the next GNOME session
 #  12. ~/.config/lcars (your custom sidebar menu) is recorded as user data: rollback
 #      moves it to ~/lcars-backups instead of deleting it
-#  11. The packaged user service for hyprpolkitagent (and mako, if present) is
+#  11. The packaged user services for hyprpolkitagent and hypridle (and mako, if present) are
 #      masked for this user (`systemctl --user mask`): the packages enable them for
 #      every graphical login, GNOME included. LCARS starts these tools itself.
 #  10. The crash guard's one-time notice (~/.config/autostart/lcars-fallback-notice.desktop)
 #      is recorded so rollback removes it if it never got shown
-# It never touches GDM, GNOME or /etc, and does not make LCARS the default session.
+#  13. `systemctl --global disable` for hypridle and hyprpolkitagent: their packages
+#      enable them for every user's graphical session (the login screen and other
+#      accounts included). This removes their two symlinks under
+#      /etc/systemd/user/graphical-session.target.wants/ — the only change in /etc.
+# It never touches GDM or GNOME, and does not make LCARS the default session.
 #
 # Usage: ./install.sh [--no-timeshift] [--deploy]
 #   --deploy        required to run outside a VM (Phase 5 only)
@@ -41,6 +45,7 @@ MANIFEST="$STATE/manifest"
 SESSION_FILE=/usr/share/wayland-sessions/lcars.desktop
 PACKAGES=(
   hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent
+  hyprlock hypridle
   grim slurp wl-clipboard brightnessctl playerctl
   # Quickshell build and runtime dependencies
   g++ git cmake ninja-build pkg-config spirv-tools libcli11-dev libjemalloc-dev
@@ -59,8 +64,10 @@ PKG_RECORD="$HOME/lcars-backups/lcars-packages.txt"   # survives rollback, for a
 RUNTIME_DIRS=("$HOME/.local/share/hyprland" "$HOME/.cache/hyprland")
 HIDE_SESSIONS=(/usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/hyprland-uwsm.desktop)
 APPORT_IGNORE="$HOME/.apport-ignore.xml"
-APPORT_PROGRAMS=(/usr/bin/Hyprland /usr/libexec/hyprpolkitagent /usr/libexec/xdg-desktop-portal-hyprland)
-MASK_UNITS=(hyprpolkitagent.service mako.service)
+APPORT_PROGRAMS=(/usr/bin/Hyprland /usr/libexec/hyprpolkitagent /usr/libexec/xdg-desktop-portal-hyprland
+                 /usr/bin/hypridle)
+MASK_UNITS=(hyprpolkitagent.service hypridle.service mako.service)
+GLOBAL_DISABLE_UNITS=(hypridle.service hyprpolkitagent.service)
 FALLBACK_NOTICE="$HOME/.config/autostart/lcars-fallback-notice.desktop"   # written by lcars-session
 CONFIG_LINKS=(hypr)               # ~/.config/<name> -> $REPO/<name>
 FONT_LINK="$HOME/.local/share/fonts/lcars"
@@ -202,6 +209,15 @@ if ! "$QS_BIN" --version 2>/dev/null | grep -q "Quickshell ${QS_TAG#v} "; then
   rm -rf "$src"
   say "Installed $("$QS_BIN" --version | head -n1)"
 fi
+
+# ---- 13. keep Hyprland helpers out of every other user's session --------------
+for unit in "${GLOBAL_DISABLE_UNITS[@]}"; do
+  if [ "$(systemctl --global is-enabled "$unit" 2>/dev/null)" = enabled ]; then
+    sudo systemctl --global disable "$unit" >/dev/null 2>&1
+    record "globaldisable	$unit"
+    say "Disabled $unit for all users' sessions (LCARS starts it itself)"
+  fi
+done
 
 # ---- 12. the custom menu (created later by the sidebar, if ever) --------------
 [ -e "$USER_MENU_DIR" ] || record "userdata	$USER_MENU_DIR"

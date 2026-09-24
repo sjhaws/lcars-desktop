@@ -1,0 +1,8 @@
+#!/bin/sh
+# Called by hypridle after 30 idle minutes: suspend only when running on battery,
+# so a docked or plugged-in laptop stays awake at the desk.
+for ps in /sys/class/power_supply/*; do
+  [ "$(cat "$ps/type" 2>/dev/null)" = Mains ] && [ "$(cat "$ps/online" 2>/dev/null)" = 1 ] && exit 0
+done
+ls /sys/class/power_supply/*/capacity >/dev/null 2>&1 || exit 0   # no battery: a desktop or VM
+exec systemctl suspend

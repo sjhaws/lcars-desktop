@@ -77,6 +77,10 @@ else
                  act "restore $(basename "$a") to the login screen (sudo)" \
                    sudo dpkg-divert --local --rename --divert "$a.lcars-hidden" --remove "$a"
                fi ;;
+      globaldisable)
+               if [ "$(systemctl --global is-enabled "$a" 2>/dev/null)" = disabled ]; then
+                 act "re-enable $a for all users (sudo)" sudo systemctl --global enable "$a"
+               fi ;;
       mask)    if [ "$(systemctl --user is-enabled "$a" 2>/dev/null)" = masked ]; then
                  act "unmask user service $a" unmask_unit "$a"
                fi ;;

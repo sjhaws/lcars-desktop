@@ -5,6 +5,7 @@
 | Keys | Action |
 | --- | --- |
 | `Super+Shift+Esc` | **Exit to the login screen** (escape route 1) |
+| `Super+L` | Lock the screen (also the LOCK block in the top bar) |
 | `Super+Return` | Terminal |
 | `Super+Space` | LCARS app launcher: type to search, ↑/↓ to choose, Enter to open, Esc to close |
 | `Super+B` / `Super+E` | Web browser / Files |
@@ -53,4 +54,15 @@ segment the same way. `lcars-rollback` keeps this file (it moves it to `~/lcars-
 If the frame ever fails to start, a red notice appears at the top of the screen; the
 keyboard shortcuts above keep working. Details are in `~/.local/state/lcars/shell.log`.
 
-Not yet: lock screen, idle dimming and sounds (Phase 4).
+## Lock screen and idle
+
+The screen dims after 5 idle minutes, locks after 10 and turns off after 11. After 30 minutes
+the laptop suspends, but only on battery; plugged in or docked it stays awake. It also always
+locks before a suspend. Unlock by typing your password ("ENTER ACCESS CODE") and Enter.
+The times are in `hypr/hypridle.conf`.
+
+If the lock screen itself ever crashes, the screen stays locked and shows a red message.
+From a text console (`Ctrl+Alt+F3`, log in) run `hyprctl --instance 0 dispatch exec hyprlock`,
+then switch back with `Ctrl+Alt+F2`.
+
+Not yet: sounds, app themes and multi-monitor polish (Phase 4).

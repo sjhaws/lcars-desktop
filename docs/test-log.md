@@ -229,3 +229,57 @@ The sidebar's filler block is now an **EDIT MENU** button; right-clicking any si
 `Super+F3` do the same (open `~/.config/lcars/menu.json`, created from the defaults if missing).
 VM test: all three open Text Editor on the file; right-click on TERMINAL opens the file, not a
 terminal. `vm/click.sh` gained a button argument for right/middle clicks.
+
+## 2026-09-24 — Phase 4 (part 1): lock screen and idle
+
+### What was built
+
+- `hypr/hyprlock.conf.in` → generated LCARS lock screen: elbow (one rounded outer corner, concave
+  inner corner) and labelled sidebar blocks (SECURITY, ACCESS, user, LOCKED), "LCARS ACCESS
+  TERMINAL" on the arm, large clock, stardate (`hypr/scripts/stardate`), "ENTER ACCESS CODE"
+  field that turns red with "ACCESS DENIED"
+- `hypr/hypridle.conf`: dim 5 min, lock 10 min, screen off 11 min, suspend 30 min on battery only
+  (`hypr/scripts/idle-suspend`), lock before every sleep
+- `Super+L` and a LOCK block in the top bar; `misc:allow_session_lock_restore` so a crashed
+  hyprlock can be replaced
+- `install.sh`: `hyprlock`, `hypridle`; masks the packaged `hypridle.service` (enabled for every
+  graphical session, it would lock GNOME with hyprlock); hypridle added to the apport ignore list
+
+### Problems found and fixed
+
+| Problem | Fix |
+| --- | --- |
+| Placeholder text cut at `<span foreground="` | `#` starts a hyprlang comment → `##` |
+| Most blocks and labels missing | hyprlang needs a newline after `shape {` / `label {` |
+| Concave corner square, labels hidden under blocks | hyprlock doesn't keep file order → explicit `zindex` on every widget |
+| Lowercase user name on the lock screen | `cmd[update:0] echo "$USER" \| tr a-z A-Z` |
+
+### Tests (VM)
+
+| Test | Result |
+| --- | --- |
+| LOCK click / `Super+L` / `loginctl lock-session` from the session → locked | **PASS** |
+| Wrong code → "ACCESS DENIED" in red; right code unlocks | **PASS** |
+| Idle (test timings 5/10/15 s): locked at ~11 s, screen off at 15 s, back on at unlock | **PASS** |
+| Suspend → locked before sleep (hyprlock running on wake) | **PASS** |
+| Display after resume | **Not testable in the VM.** virtio-gpu/virgl stalls on a fence after S3 (`drm_atomic_helper_wait_for_fences`, Hyprland "Cannot commit when a page-flip is awaiting"): the screen stops updating while Hyprland and hyprlock keep running. Must be checked on the real laptop (Intel/NVIDIA); NVIDIA needs `nvidia-suspend`/`nvidia-resume` enabled to preserve video memory |
+
+Note: `loginctl lock-session` from an SSH shell locks the SSH session, not the desktop; tests
+now trigger it inside the graphical session.
+
+### Found in the full install test: helpers in other users' sessions
+
+`hypridle` crash reports appeared for the GDM login screen's users (60578/60579): the `hypridle`
+and `hyprpolkitagent` packages enable their user services globally
+(`/etc/systemd/user/graphical-session.target.wants/`), so they start in *every* user's graphical
+session: the login screen and any other account, not just Steven's (whose per-user masks worked).
+Steven chose to disable them globally: `install.sh` runs `systemctl --global disable` (recorded
+as `globaldisable`), `lcars-rollback` runs `--global enable`. This is the only change in `/etc`.
+
+Full cycle after the change (fresh install from `pre-deploy`): symlinks removed (only Ubuntu's
+`spice-vdagent` left); login screen after reboot: no hypridle, no polkit agent, no crash files;
+LCARS: shell, hypridle, polkit agent running, `Super+L` locks; Ubuntu: no Hyprland helpers, no
+crash files; `lcars-rollback --purge`: 31 changes, 0 problems, both services re-enabled, package
+list identical. That run logged into GNOME before rolling back, so the home diff lists GNOME's
+own first-login files (Evolution data, XDG folders, user-dirs) and `/etc/whoopsie` (created by
+Ubuntu's crash reporter on the first GNOME login), none of them from LCARS.
