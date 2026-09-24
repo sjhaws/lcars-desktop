@@ -25,7 +25,7 @@ Full plan, decisions and roadmap: `docs/plan.md`. Read it at the start of every 
 - Window behavior: full tiling on every workspace
 - Input: keyboard-first (all LCARS buttons still clickable)
 - Sounds: on by default, mute toggle in the bar
-- Shell toolkit: undecided — prototype a small LCARS bar in both Quickshell and AGS/Astal in Phase 1, then recommend one
+- Shell toolkit: Quickshell — chosen after the Phase 1 bake-off against AGS/Astal (see `docs/test-log.md`)
 
 ## Host machine
 

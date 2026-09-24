@@ -1,0 +1,76 @@
+# Test log
+
+## 2026-09-23 — Phase 1: VM and safety net
+
+### Test VM
+
+| Item | Result |
+| --- | --- |
+| Host tooling | libvirt 12.0.0 (system mode), QEMU 10.2.1, installed by Steven. Default storage pool created at `/var/lib/libvirt/images` |
+| Guest | Ubuntu 26.04.1 LTS from `ubuntu-26.04.1-desktop-amd64.iso` (SHA256 verified), unattended autoinstall via `vm/create.sh` |
+| Guest kernel | 7.0.0-34-generic (same as host) |
+| Resources | 4 vCPU (host-passthrough), 6 GB RAM, 40 GB qcow2, BIOS boot (libvirt can't take internal snapshots of UEFI guests) |
+| Graphics | virtio-vga-gl + `egl-headless` on the Intel iGPU (`renderD128`), shown over VNC on 127.0.0.1:5959 |
+| 3D acceleration | Guest kernel: `[drm] features: +virgl`. Hyprland log: `Renderer: virgl (Mesa Intel(R) UHD Graphics (CML GT2))` — **PASS** |
+| Screenshots | QEMU `screendump` fails on virgl scanouts ("no surface"); `vm/vncgrab.py` captures over VNC instead (GDM, consoles and sessions) |
+| Snapshot | `clean-install` (shut off, fresh install + SSH key + passwordless sudo for the test user) |
+
+### Hyprland 0.53.3 (Ubuntu package) in the VM
+
+- Stock `hyprland.desktop` session starts from GDM and renders with virgl. **PASS**
+- `hyprctl dispatch exit` makes Hyprland segfault during teardown (apport: signal 11). The upstream
+  `start-hyprland` watchdog still reports "Hyprland exit cleanly" and GDM returns normally.
+  → `lcars-session` launches through `start-hyprland` so a requested exit is not counted as a crash.
+
+### Toolkit bake-off (same bar in both: elbow, workspaces 1–5, clock + stardate, PipeWire mute toggle)
+
+| | Quickshell 0.3.1 (QML) | AGS 3.1 / Astal (TypeScript + GTK 4) |
+| --- | --- | --- |
+| Ubuntu 26.04 package | No — build from source (CMake, Qt 6.10 from Ubuntu) | No — build 4 Astal libs (Meson/Vala) + AGS (Go) + `npm install` |
+| Build snags | Crash handler needs `cpptrace` (not packaged) → `-DCRASH_HANDLER=OFF` | Needs `valadoc`; AGS needs `npm install` before `meson install` (else `gnim` missing) |
+| Build time in VM | ~4 min | < 1 min (plus npm download) |
+| First run | Worked unchanged | Needed a fix: app is bundled to `/run/user/…`, so runtime-relative paths break (palette now imported at bundle time) |
+| Runtime warnings | None (one harmless portal app-ID warning) | 2 `CRITICAL`s from AstalHyprland at start (`get_client: address != NULL`, JSON node invalid) against Hyprland 0.53 |
+| Memory (RSS, bar only) | 146 MB | 207 MB (gjs) |
+| Workspace/mute state updates | PASS | PASS |
+| Mouse clicks (QMP tablet) | PASS — mute toggle, workspace 4 | PASS — mute toggle, workspace 4 |
+| LCARS shapes | Per-corner radii native; `Shape`/`PathArc` available for true elbows and swept curves; property animations built in | GTK CSS per-corner radii only; true curved elbows need Cairo drawing areas; CSS transitions only |
+| Visual result | Matches the design; tighter pills | Near-identical; GTK button padding widens pills, inner elbow curve flatter |
+
+**Recommendation: Quickshell.** It ran first time, has no warnings against the current Hyprland,
+uses less memory, and QML's shape and animation primitives fit LCARS elbows and sweeps far better
+than GTK CSS. Its cost is a ~4 minute source build, which `install.sh` will need to handle in Phase 3.
+
+### install.sh / lcars-rollback
+
+Snapshots: `clean-install` → `pre-deploy` (+ Timeshift configured, rsync mode on `/dev/vda2`) → `installed`.
+
+| Test | Result |
+| --- | --- |
+| `install.sh` on `pre-deploy` | **PASS** (exit 0, ~50 s). Timeshift snapshot, `~/.config` tarball, 50 new packages (Hyprland 0.53.3 + deps), 2 symlinks, 1 copied file, runtime dirs recorded, 1 system file (`/usr/share/wayland-sessions/lcars.desktop`) |
+| Refuses outside a VM | By design: `systemd-detect-virt`; `--deploy` needed on real hardware (Phase 5) |
+| Bugs found and fixed | `sudo -v` asks for a password even with NOPASSWD → `sudo true`; `comm` failed on locale sort order → `LC_ALL=C` |
+| GDM gear menu | Shows **LCARS**, **Ubuntu**, and **Hyprland** (from Ubuntu's `hyprland` package, not crash-guarded) |
+| LCARS start time | Hyprland answering IPC ~2 s after the password is submitted — **PASS** (< 10 s) |
+| `lcars-rollback --purge` after using LCARS | **PASS**: package list, `/etc` (diffed against the Timeshift snapshot) and session files identical to before. Remaining: `~/lcars-backups/` (kept on purpose), default session `""` → `"ubuntu"` (equivalent), app data from using Ptyxis |
+| Plain rollback, then `--purge` later | Fixed: package list now also kept in `~/lcars-backups/lcars-packages.txt` |
+| Runtime leftovers | Fixed: `~/.local/share/hyprland` (and `~/.cache/hyprland`) recorded at install, removed by rollback |
+
+### Escape routes
+
+| # | Route | Result |
+| --- | --- | --- |
+| 1 | `Super+Shift+Esc` → login screen → gear → "Ubuntu" | **PASS**. Exit status 139 (Hyprland 0.53.3 segfaults in `libaquamarine` while shutting down); `lcars-session` recognises the exit marker, logs "exited on request", records no crash. GDM gear → Ubuntu → `gnome-shell --mode=ubuntu` |
+| 2 | Crash on login → crash guard starts Ubuntu | **PASS** after a fix. 3× SIGSEGV → 3 crashes logged (exit 134) → `gnome-shell --mode=ubuntu` + `~/LCARS-NOTE.txt`. **First attempt failed:** upstream `start-hyprland` restarted the crash in safe mode, then reported the second crash as a clean exit. `lcars-session` now starts Hyprland directly |
+| 3 | Frozen/black screen → `Ctrl+Alt+F3` → console → `lcars-rollback` | **PASS** after a fix. **A frozen compositor blocks `Ctrl+Alt+F3`** (Wayland compositors do the VT switch themselves; SIGSTOPped Hyprland → VT stayed on tty2). Added a hang watchdog: no IPC answer for 30 s → Hyprland killed (~44 s after the freeze) and counted as a crash. Then `Ctrl+Alt+F3` → tty3 login → `lcars-rollback`: 7 changes, 0 problems |
+| 4 | `touch ~/.lcars-off` (over SSH) → next login goes to Ubuntu | **PASS**. LCARS chosen at GDM → Ubuntu session, Hyprland never started, note written |
+| 5 | Restore pre-deploy Timeshift snapshot | **PASS with caveats.** `timeshift --restore --skip-grub --yes` (run over SSH while LCARS was logged in) removed all 50 packages and the session file and reset the default session. It did **not** reboot by itself and left the display dead ("Display output is not active"); `sudo reboot` needed. Timeshift excludes `/home`, so home leftovers remain until `lcars-rollback` is run (7 changes, 0 problems; tolerated the already-removed system parts). Live-USB variant **not rehearsed** |
+
+### Open issues for Steven
+
+1. **Crash popup after exiting LCARS.** Hyprland 0.53.3's segfault on exit leaves an apport report, so the next GNOME login shows "Ubuntu 26.04 has experienced an internal error". Harmless, but on every exit.
+2. **Freeze recovery takes ~45 s** (watchdog). A faster manual route needs Magic SysRq "unraw" (`Alt+SysRq+R`), which Ubuntu disables; enabling it means a documented `/etc/sysctl.d` file.
+3. **Crash-guard note is only a file** (`~/LCARS-NOTE.txt`); nothing tells you on screen why you landed in Ubuntu.
+4. **`lcars-rollback` is on `PATH` only in login shells** (console, interactive SSH). In a one-off SSH command use `~/.local/bin/lcars-rollback`.
+5. **Unguarded "Hyprland" entry in the GDM gear menu** comes from Ubuntu's package.
+6. VM test user: `steven` / `lcars`, passwordless sudo (VM only).
