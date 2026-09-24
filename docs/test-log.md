@@ -343,3 +343,21 @@ writes to a temp file and renames it into place.
   libadwaita ignores empty values silently, checked)
 - VM: Files, Text Editor, Settings dark with orange accent in LCARS (screenshot); after a quick
   switch to Ubuntu, D-Bus-started Files has only empty values
+
+## 2026-09-24 — Compact / fullscreen mode (Steven's request)
+
+- `Super+F11` (Quickshell IPC `frame toggleCompact`), a COMPACT pill in the header, or a click on
+  the line. `Settings.compact` persists in `~/.config/lcars/settings.json`
+- Compact: the frame is unloaded, `CompactBar.qml` shows a 10 px line of palette blocks, window
+  gaps 3/4 px. Full: frame back, gaps from the tokens
+- **Layout bug found:** re-showing the panels made them appear in a random order, and Hyprland
+  lays out exclusive zones first-come (readout bar ended up above the header, bottom rule full
+  width). Re-creating them in order didn't help: a panel appears when its first frame is ready.
+  **Fix:** every panel ignores exclusive zones and sits at a fixed position computed from the
+  tokens (`Theme.headerHeight` etc.); the shell reserves the window area itself with
+  `hyprctl keyword monitor ,addreserved,T,B,L,R` and re-applies it after a config reload.
+  Bonus: if the shell isn't running, nothing is reserved and apps get the full screen
+- VM: 3 compact/full cycles by key, the pill, persistence across re-login, the line click; panels
+  at identical positions every time; terminal at 8,18 1264×774 compact and 166,130 full
+  (= 150 sidebar + 12 gap + 4 border; 64 header + 50 bar + 12 + 4); unchanged after `hyprctl reload`.
+  Closed panels linger briefly in `hyprctl layers` with pid -1 but aren't drawn

@@ -17,8 +17,9 @@ PanelWindow {
     readonly property int armH: Theme.frame.headerArm
     readonly property int side: Theme.frame.sidebarWidth
     readonly property int inner: Theme.frame.innerRadius
-    implicitHeight: pad + titleH + gap + armH
-    exclusiveZone: implicitHeight
+    implicitHeight: Theme.headerHeight
+    exclusionMode: ExclusionMode.Ignore     // placed explicitly; see Theme.qml
+    exclusiveZone: 0
     color: Theme.color.background
 
     SystemClock { id: clock; precision: SystemClock.Seconds }
@@ -117,6 +118,16 @@ PanelWindow {
             text: "STARDATE " + header.stardate(clock.date) + "  " + Qt.formatDateTime(clock.date, "HH:mm:ss")
             color: Theme.color.periwinkle
             font { family: Theme.font; pixelSize: 28; weight: Theme.fontWeight }
+        }
+        Segment {   // fold the frame into a thin line (Super+F11)
+            Layout.preferredWidth: 110
+            Layout.preferredHeight: 34
+            label: "Compact"
+            fill: Theme.color.periwinkle
+            radius: height / 2
+            centerLabel: true
+            sound: "open"
+            onActivated: Settings.toggleCompact()
         }
         Segment {   // interface sounds on/off (not the system volume)
             Layout.preferredWidth: 110

@@ -43,7 +43,10 @@
     "headerTitle": 40,
     "headerArm": 12,
     "headerRadius": 30,
-    "footHeight": 22
+    "footHeight": 22,
+    "compactHeight": 10,
+    "compactGapsIn": 3,
+    "compactGapsOut": 4
   },
   "apps": {
     "colorScheme": "prefer-dark",

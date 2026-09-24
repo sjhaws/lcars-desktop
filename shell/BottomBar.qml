@@ -11,8 +11,10 @@ PanelWindow {
     readonly property int pad: Theme.frame.padding
     readonly property int armH: Theme.frame.footHeight
     readonly property int inner: Theme.frame.innerRadius
-    implicitHeight: pad + armH + inner
-    exclusiveZone: implicitHeight
+    margins.left: Theme.frame.sidebarWidth
+    implicitHeight: Theme.bottomHeight
+    exclusionMode: ExclusionMode.Ignore     // placed explicitly; see Theme.qml
+    exclusiveZone: 0
     color: Theme.color.background
 
     property string address: "NO ADDRESS"

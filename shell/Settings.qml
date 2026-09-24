@@ -10,6 +10,8 @@ Singleton {
     readonly property string file: Quickshell.env("HOME") + "/.config/lcars/settings.json"
 
     property bool sounds: true          // interface chirps (on by default)
+    property bool compact: false        // frame collapsed to a thin line (Super+F11)
+    property bool loaded: false
 
     FileView {
         id: view
@@ -17,8 +19,14 @@ Singleton {
         blockLoading: true
         printErrors: false
         onLoaded: {
-            try { settings.sounds = JSON.parse(text()).sounds ?? true } catch (e) {}
+            try {
+                const j = JSON.parse(text())
+                settings.sounds = j.sounds ?? true
+                settings.compact = j.compact ?? false
+            } catch (e) {}
+            settings.loaded = true
         }
+        onLoadFailed: settings.loaded = true
     }
     function save() {
         Quickshell.execDetached(["mkdir", "-p", Quickshell.env("HOME") + "/.config/lcars"])
@@ -28,7 +36,8 @@ Singleton {
     Timer {
         id: saveTimer
         interval: 200
-        onTriggered: view.setText(JSON.stringify({ sounds: settings.sounds }, null, 2) + "\n")
+        onTriggered: view.setText(JSON.stringify({ sounds: settings.sounds, compact: settings.compact }, null, 2) + "\n")
     }
     function toggleSounds() { sounds = !sounds; save() }
+    function toggleCompact() { compact = !compact; save() }
 }

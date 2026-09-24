@@ -10,13 +10,13 @@ import Quickshell.Services.UPower
 PanelWindow {
     id: bar
     anchors { top: true; left: true; right: true }
-    // No left margin: Hyprland already places this after the sidebar's reserved
-    // zone, because the sidebar is created first (see shell.qml)
+    margins { top: Theme.headerHeight; left: Theme.frame.sidebarWidth }
+    exclusionMode: ExclusionMode.Ignore     // placed explicitly; see Theme.qml
     readonly property int pad: Theme.frame.padding
     readonly property int arm: Theme.frame.armHeight
     readonly property int inner: Theme.frame.innerRadius
-    implicitHeight: pad + arm + inner
-    exclusiveZone: implicitHeight
+    implicitHeight: Theme.readoutHeight
+    exclusiveZone: 0
     color: Theme.color.background
 
     PwObjectTracker { objects: [Pipewire.defaultAudioSink] }

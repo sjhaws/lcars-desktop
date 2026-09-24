@@ -4,9 +4,8 @@ Open items and ideas, newest requests first. Phase work follows `docs/plan.md`.
 
 ## Requested by Steven
 
-- [ ] **Fullscreen / compact mode.** A toggle (keyboard shortcut and a button) that collapses the
-  LCARS frame to a thin line at the top of the screen and gives the open apps the rest of the
-  screen; the same toggle brings the full frame back. (Requested 2026-09-24.)
+- [x] **Fullscreen / compact mode.** `Super+F11`, the COMPACT pill, or a click on the line;
+  remembered across logins. (Requested and built 2026-09-24.)
 - [ ] **Verify unlocking in the VM** with the LOCK pill, a click into the VM and one tap of Super
   before typing. If keys still don't arrive, give the VM viewer the whole keyboard.
 - [ ] Optional **UBUNTU** button in the sidebar: log out with the Ubuntu session preselected.

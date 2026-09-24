@@ -11,6 +11,7 @@
 | `Super+B` / `Super+E` | Web browser / Files |
 | `Super+F1` / `Super+F2` | The sidebar's two custom buttons |
 | `Super+F3` | Edit the sidebar menu (opens `~/.config/lcars/menu.json`) |
+| `Super+F11` | Compact mode: fold the frame into a thin line and give apps the screen; again to unfold |
 | `Super+Q` | Close window |
 | `Super+←↑→↓` | Move focus |
 | `Super+Shift+←↑→↓` | Move window |
@@ -58,6 +59,13 @@ only the label). `lcars-rollback` keeps this file (it moves it to `~/lcars-backu
 
 If the frame ever fails to start, a red notice appears at the top of the screen; the
 keyboard shortcuts above keep working. Details are in `~/.local/state/lcars/shell.log`.
+
+## Compact mode
+
+`Super+F11`, the **COMPACT** pill in the header, or a click on the thin line toggles it. In
+compact mode the frame folds into a 10 px LCARS line at the top and windows get the rest of
+the screen with tighter gaps. Everything else keeps working (launcher, notifications, lock,
+shortcuts). The choice is remembered across logins.
 
 ## App look
 

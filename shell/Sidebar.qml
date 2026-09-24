@@ -6,8 +6,10 @@ import Quickshell
 PanelWindow {
     id: sidebar
     anchors { left: true; top: true; bottom: true }
+    margins.top: Theme.headerHeight
     implicitWidth: Theme.frame.sidebarWidth
-    exclusiveZone: Theme.frame.sidebarWidth
+    exclusionMode: ExclusionMode.Ignore     // placed explicitly; see Theme.qml
+    exclusiveZone: 0
     color: Theme.color.background
 
     readonly property int pad: Theme.frame.padding
