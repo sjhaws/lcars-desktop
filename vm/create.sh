@@ -41,7 +41,7 @@ autoinstall:
   timezone: $(timedatectl show -p Timezone --value)
   identity:
     hostname: lcars-vm
-    realname: Steven
+    realname: $VM_REALNAME
     username: $VM_USER
     password: '$hash'
   ssh:

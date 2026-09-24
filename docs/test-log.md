@@ -73,7 +73,7 @@ Snapshots: `clean-install` → `pre-deploy` (+ Timeshift configured, rsync mode 
 3. **Crash-guard note is only a file** (`~/LCARS-NOTE.txt`); nothing tells you on screen why you landed in Ubuntu. [One-time GNOME notification]
 4. **`lcars-rollback` is on `PATH` only in login shells** (console, interactive SSH). In a one-off SSH command use `~/.local/bin/lcars-rollback`.
 5. **Unguarded "Hyprland" entry in the GDM gear menu** comes from Ubuntu's package. [Hide with `dpkg-divert`; rollback restores]
-6. VM test user: `steven` / `lcars`, passwordless sudo (VM only).
+6. VM test user: `captain` ("Captain" at the login screen) / `lcars`, passwordless sudo (VM only). Was `steven` until 2026-09-24.
 
 ## 2026-09-24 — Phase 1 follow-up: Steven's four decisions
 
@@ -167,3 +167,10 @@ Files, Editor, Monitor (`resources`), Settings, 2 custom buttons, Apps, Exit.
 - If the shell's QML fails to load, LCARS has no frame (keyboard shortcuts still work). Phase 3
   should make lcars-session or Hyprland notice and show a message.
 - `prototypes/ags` is obsolete; kept for the record of the bake-off.
+
+## 2026-09-24 — VM rebuilt with user "Captain"
+
+At Steven's request the VM user is now `captain` (display name "Captain"; password still
+`lcars`). The old VM and its snapshots were deleted and the VM rebuilt from the ISO with
+`vm/create.sh`, then `vm/prepare.sh` (new: Timeshift install + configuration, all Ubuntu
+updates, `pre-deploy` snapshot), so the whole VM can now be rebuilt with two commands.

@@ -118,7 +118,13 @@ if [ "${#missing[@]}" -gt 0 ]; then
   # downgrade them (they're normally pending Ubuntu updates)
   upgrades="$(apt-get -s install "${missing[@]}" 2>/dev/null | awk '/^Inst [^ ]+ \[/{print $2}' | tr '\n' ' ')"
   [ -z "$upgrades" ] || say "Note: apt will also update these installed packages (kept on rollback): $upgrades"
-  sudo apt-get -o DPkg::Lock::Timeout=300 install -y "${missing[@]}"
+  # Retry once after refreshing the index: while Ubuntu publishes an update the
+  # index can briefly point at a package version the mirror no longer has (404)
+  sudo apt-get -o DPkg::Lock::Timeout=300 install -y "${missing[@]}" || {
+    say "Package download failed; refreshing the package index and retrying once"
+    sudo apt-get -o DPkg::Lock::Timeout=300 update -qq
+    sudo apt-get -o DPkg::Lock::Timeout=300 install -y "${missing[@]}"
+  }
   after="$(dpkg-query -W -f='${Package}\n' | LC_ALL=C sort)"
   # Record every package that is new, including dependencies, for `lcars-rollback --purge`
   LC_ALL=C comm -13 <(echo "$before") <(echo "$after") | while read -r p; do
