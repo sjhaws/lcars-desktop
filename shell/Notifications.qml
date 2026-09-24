@@ -17,7 +17,11 @@ Scope {
         bodySupported: true
         imageSupported: false
         keepOnReload: false
-        onNotification: n => { n.tracked = true }
+        onNotification: n => {
+            n.tracked = true
+            Sounds.play(n.urgency === NotificationUrgency.Critical ? "alarm"
+                      : n.urgency === NotificationUrgency.Low ? "" : "alert")
+        }
     }
 
     PanelWindow {

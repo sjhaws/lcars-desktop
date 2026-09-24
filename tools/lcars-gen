@@ -56,6 +56,9 @@ def render(text):
 
 
 def main():
+    # Interface sounds are generated too (original synthesis, see tools/lcars-sounds)
+    import runpy
+    runpy.run_path(str(REPO / "tools/lcars-sounds"), run_name="__main__")
     for src, dst in TEMPLATES.items():
         out = REPO / dst
         out.parent.mkdir(parents=True, exist_ok=True)

@@ -118,6 +118,16 @@ PanelWindow {
             color: Theme.color.periwinkle
             font { family: Theme.font; pixelSize: 28; weight: Theme.fontWeight }
         }
+        Segment {   // interface sounds on/off (not the system volume)
+            Layout.preferredWidth: 110
+            Layout.preferredHeight: 34
+            label: Settings.sounds ? "SFX on" : "SFX off"
+            fill: Settings.sounds ? Theme.color.orange : Theme.color.lavender
+            radius: height / 2
+            centerLabel: true
+            sound: ""
+            onActivated: { Settings.toggleSounds(); if (Settings.sounds) Sounds.play("confirm") }
+        }
         Segment {   // LOCK pill, like LCARS "LOGOUT"
             Layout.preferredWidth: 110
             Layout.preferredHeight: 34

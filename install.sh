@@ -22,7 +22,7 @@
 #   9. ~/.apport-ignore.xml gets entries for /usr/bin/Hyprland (0.53 segfaults on
 #      every exit) and for the session helpers that abort when the compositor
 #      goes away, which would otherwise pop up crash dialogs in the next GNOME session
-#  12. ~/.config/lcars (your custom sidebar menu) is recorded as user data: rollback
+#  12. ~/.config/lcars (your custom sidebar menu and settings) is recorded as user data: rollback
 #      moves it to ~/lcars-backups instead of deleting it
 #  11. The packaged user services for hyprpolkitagent and hypridle (and mako, if present) are
 #      masked for this user (`systemctl --user mask`): the packages enable them for
@@ -55,6 +55,7 @@ PACKAGES=(
   qml6-module-qtquick qml6-module-qtquick-layouts qml6-module-qtquick-window
   qml6-module-qtqml-workerscript
   upower                          # battery readout (already on laptops)
+  pipewire-bin                    # pw-play for interface sounds (already on Ubuntu)
 )
 QS_TAG=v0.3.1
 QS_REPO=https://github.com/quickshell-mirror/quickshell.git

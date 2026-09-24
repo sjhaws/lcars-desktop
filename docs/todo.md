@@ -14,11 +14,14 @@ Open items and ideas, newest requests first. Phase work follows `docs/plan.md`.
 ## Phase 4 (polish)
 
 - [x] Lock screen (hyprlock) and idle (hypridle)
-- [ ] Interface sounds, on by default, with their own mute toggle
+- [x] Interface sounds, on by default, with their own mute toggle (SFX pill)
 - [ ] GTK and Qt themes from the palette (Files, Settings and other apps in LCARS colors)
 - [ ] Multi-monitor: frame on every screen, workspaces per monitor
 
 ## Small polish
+
+- [ ] Hear the sounds in the VM: its sound card isn't routed to the host (the system libvirt QEMU
+  can't reach the desktop's PipeWire); playback was verified via PipeWire streams instead
 
 - [ ] Wi-Fi network name (SSID) in the NET readout
 - [ ] Bigger font in the "frame failed to start" notice (Hyprland seems to ignore `fontsize:`)

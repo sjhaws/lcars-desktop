@@ -23,7 +23,10 @@ Scope {
         WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
         WlrLayershell.namespace: "lcars-launcher"
 
-        onVisibleChanged: if (visible) { search.text = ""; list.currentIndex = 0; search.forceActiveFocus() }
+        onVisibleChanged: if (visible) {
+            search.text = ""; list.currentIndex = 0; search.forceActiveFocus()
+            Sounds.play("open")
+        }
 
         // Click outside the panel closes it
         MouseArea { anchors.fill: parent; onClicked: launcher.open = false }
@@ -44,7 +47,8 @@ Scope {
                 .map(x => x.app)
         }
         function launch(app) {
-            if (!app) return
+            if (!app) { Sounds.play("error"); return }
+            Sounds.play("confirm")
             app.execute()
             launcher.open = false
         }
@@ -136,6 +140,7 @@ Scope {
                     model: win.apps
                     highlightMoveDuration: 0
                     delegate: Segment {
+                        sound: ""        // launch() plays "confirm"
                         required property var modelData
                         required property int index
                         width: list.width

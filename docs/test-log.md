@@ -315,3 +315,15 @@ writes to a temp file and renames it into place.
 - Found: `Hyprland.activeToplevel.lastIpcObject` was empty → `ToplevelManager.activeToplevel.appId`;
   `HOSTNAME` isn't in the environment → read `/etc/hostname`
 - VM check: no QML warnings, windows tile inside the frame (screenshot)
+
+## 2026-09-24 — Phase 4 (part 2): interface sounds
+
+- `tools/lcars-sounds` synthesizes six original sounds (sine + 2nd/3rd harmonics, 4 ms attack,
+  exponential decay; 112–390 ms): beep (button), open (launcher), confirm (app launched / SFX on),
+  alert (notification), alarm (critical), error (launcher with nothing to launch). Run by
+  `lcars-gen`, output `sounds/generated/` (gitignored)
+- `shell/Sounds.qml` plays them with `pw-play --volume 0.6`; `shell/Settings.qml` keeps
+  `{"sounds": true|false}` in `~/.config/lcars/settings.json`; SFX ON/OFF pill in the header
+- VM test (PipeWire monitor counting `pw-play` streams): button click → 1 stream; SFX off → 0 and
+  saved false; click while muted → 0; SFX on → 1 (confirm) and saved true; notification → 1
+- The VM's sound card isn't routed to the host, so the sounds can't be heard in the VM

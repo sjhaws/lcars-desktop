@@ -8,6 +8,7 @@ Rectangle {
     property string hint: ""
     property color fill: Theme.color.orange
     property bool centerLabel: false      // pills center their label
+    property string sound: "beep"         // "" for silent blocks
     readonly property real labelWidth: text.implicitWidth
     // Short blocks show only the label
     readonly property bool showHint: hint.length > 0 && height >= 44
@@ -43,7 +44,10 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: mouse => mouse.button === Qt.RightButton ? seg.secondaryActivated() : seg.activated()
+        onClicked: mouse => {
+            if (seg.sound) Sounds.play(seg.sound)
+            mouse.button === Qt.RightButton ? seg.secondaryActivated() : seg.activated()
+        }
         onWheel: wheel => seg.scrolled(wheel.angleDelta.y)
     }
 }

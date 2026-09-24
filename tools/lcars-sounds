@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""Synthesize LCARS-style interface sounds (original, no samples) into sounds/generated/.
+
+Each sound is a short sequence of notes: sine tones with a little 2nd/3rd harmonic
+for a "panel" timbre, quick attack and exponential decay so they click cleanly.
+Run by install.sh (via lcars-gen); rerun after editing SOUNDS below.
+"""
+import math, struct, wave
+from pathlib import Path
+
+RATE = 44100
+OUT = Path(__file__).resolve().parent.parent / "sounds" / "generated"
+
+# name: list of (frequency Hz, duration ms, volume 0..1); frequency 0 = silence
+SOUNDS = {
+    "beep":    [(1320, 45, 0.55), (0, 12, 0), (1760, 55, 0.5)],          # button press
+    "open":    [(880, 45, 0.45), (1175, 45, 0.45), (1568, 70, 0.5)],     # launcher opens
+    "confirm": [(1568, 40, 0.5), (2093, 80, 0.45)],                      # app launched
+    "alert":   [(1047, 70, 0.5), (0, 30, 0), (1397, 70, 0.5), (0, 30, 0), (1047, 90, 0.45)],
+    "alarm":   [(1760, 90, 0.6), (1319, 90, 0.6), (1760, 90, 0.6), (1319, 120, 0.55)],
+    "error":   [(330, 110, 0.55), (0, 40, 0), (262, 160, 0.55)],         # denied / failed
+}
+
+
+def note(freq, ms, vol):
+    n = int(RATE * ms / 1000)
+    attack = max(1, int(RATE * 0.004))
+    samples = []
+    for i in range(n):
+        t = i / RATE
+        if freq:
+            v = (math.sin(2 * math.pi * freq * t)
+                 + 0.25 * math.sin(2 * math.pi * 2 * freq * t)
+                 + 0.10 * math.sin(2 * math.pi * 3 * freq * t)) / 1.35
+            env = min(1.0, i / attack) * math.exp(-3.0 * i / n)
+            samples.append(vol * env * v)
+        else:
+            samples.append(0.0)
+    return samples
+
+
+def main():
+    OUT.mkdir(parents=True, exist_ok=True)
+    for name, notes in SOUNDS.items():
+        data = [s for f, ms, vol in notes for s in note(f, ms, vol)]
+        path = OUT / f"{name}.wav"
+        tmp = path.with_name(path.name + ".tmp")
+        with wave.open(str(tmp), "wb") as w:
+            w.setnchannels(1)
+            w.setsampwidth(2)
+            w.setframerate(RATE)
+            w.writeframes(b"".join(struct.pack("<h", int(max(-1, min(1, s)) * 32000)) for s in data))
+        tmp.replace(path)
+        print(f"generated sounds/generated/{name}.wav")
+
+
+if __name__ == "__main__":
+    main()

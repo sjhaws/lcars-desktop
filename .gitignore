@@ -3,3 +3,4 @@
 *.img
 /vm/.state/
 hypr/generated/
+sounds/generated/

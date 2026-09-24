@@ -59,6 +59,13 @@ only the label). `lcars-rollback` keeps this file (it moves it to `~/lcars-backu
 If the frame ever fails to start, a red notice appears at the top of the screen; the
 keyboard shortcuts above keep working. Details are in `~/.local/state/lcars/shell.log`.
 
+## Sounds
+
+Buttons chirp, the launcher and launched apps have their own tones, and notifications play an
+alert (critical ones an alarm). All sounds are original, synthesized by `tools/lcars-sounds`.
+The **SFX ON/OFF** pill in the header turns them off without touching the system volume; the
+choice is kept in `~/.config/lcars/settings.json`.
+
 ## Lock screen and idle
 
 The screen dims after 5 idle minutes, locks after 10 and turns off after 11. After 30 minutes
