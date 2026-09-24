@@ -29,6 +29,7 @@ ShellRoot {
     IpcHandler {
         target: "menu"
         function activate(id: string): void { Menu.activate(id) }
+        function edit(): void { Menu.edit() }
     }
     IpcHandler {
         target: "launcher"

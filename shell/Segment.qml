@@ -9,6 +9,7 @@ Rectangle {
     property color fill: Theme.color.orange
     readonly property real labelWidth: text.implicitWidth
     signal activated()
+    signal secondaryActivated()     // right-click
     signal scrolled(real delta)
 
     color: area.pressed ? Qt.lighter(fill, 1.35) : area.containsMouse ? Qt.lighter(fill, 1.15) : fill
@@ -34,7 +35,8 @@ Rectangle {
         anchors.fill: parent
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
-        onClicked: seg.activated()
+        acceptedButtons: Qt.LeftButton | Qt.RightButton
+        onClicked: mouse => mouse.button === Qt.RightButton ? seg.secondaryActivated() : seg.activated()
         onWheel: wheel => seg.scrolled(wheel.angleDelta.y)
     }
 }

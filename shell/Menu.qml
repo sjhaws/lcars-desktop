@@ -51,6 +51,10 @@ Singleton {
     function find(id) {
         return segments.concat(footer).find(s => s.id === id)
     }
+    // Open the user's menu file in Text Editor (created from the defaults if missing)
+    function edit() {
+        Quickshell.execDetached(["sh", "-c", customizeScript])
+    }
     function activate(id) {
         const s = find(id)
         if (!s) return

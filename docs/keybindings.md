@@ -9,6 +9,7 @@
 | `Super+Space` | LCARS app launcher: type to search, ↑/↓ to choose, Enter to open, Esc to close |
 | `Super+B` / `Super+E` | Web browser / Files |
 | `Super+F1` / `Super+F2` | The sidebar's two custom buttons |
+| `Super+F3` | Edit the sidebar menu (opens `~/.config/lcars/menu.json`) |
 | `Super+Q` | Close window |
 | `Super+←↑→↓` | Move focus |
 | `Super+Shift+←↑→↓` | Move window |
@@ -43,7 +44,8 @@ The VOL block mutes on click and changes volume with the scroll wheel.
 Notifications appear top right: red cap = critical (stays until clicked), orange = normal,
 periwinkle = low. Click one to open it (if the app offers that) and dismiss it.
 
-**Custom buttons:** click an unset CUSTOM button. It opens your own copy of the menu
+**Custom buttons:** click an unset CUSTOM button, the **EDIT MENU** block, or right-click any
+sidebar button (or press `Super+F3`). Each opens your own copy of the menu
 (`~/.config/lcars/menu.json`) in Text Editor. Give it a `label` and a `command`, save,
 and the sidebar updates within two seconds. You can relabel, recolor or reorder any
 segment the same way. `lcars-rollback` keeps this file (it moves it to `~/lcars-backups`).

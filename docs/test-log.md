@@ -222,3 +222,10 @@ updates, `pre-deploy` snapshot), so the whole VM can now be rebuilt with two com
 
 Checkpoint "Looks and feels like LCARS" is Steven's call. Candidates for polish: bigger font in
 the failure notice (Hyprland's `fontsize:` seems ignored), network name (SSID) in the NET readout.
+
+### 2026-09-24 — Edit menu
+
+The sidebar's filler block is now an **EDIT MENU** button; right-clicking any sidebar button and
+`Super+F3` do the same (open `~/.config/lcars/menu.json`, created from the defaults if missing).
+VM test: all three open Text Editor on the file; right-click on TERMINAL opens the file, not a
+terminal. `vm/click.sh` gained a button argument for right/middle clicks.

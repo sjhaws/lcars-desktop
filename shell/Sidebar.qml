@@ -42,14 +42,21 @@ PanelWindow {
                 hint: modelData.hint ?? ""
                 fill: modelData.color ? Theme.named(modelData.color) : Theme.cycle[(index + 1) % Theme.cycle.length]
                 onActivated: Menu.activate(modelData.id)
+                onSecondaryActivated: Menu.edit()
             }
         }
 
-        // Filler takes the leftover height, like the blank blocks on real LCARS panels
-        Rectangle {
+        // The filler takes the leftover height, like the blank blocks on real LCARS
+        // panels, and doubles as the way into the menu file
+        Segment {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            color: Theme.color.lavender
+            Layout.minimumHeight: Theme.frame.segmentHeight
+            label: "Edit menu"
+            hint: "Super+F3"
+            fill: Theme.color.lavender
+            onActivated: Menu.edit()
+            onSecondaryActivated: Menu.edit()
         }
 
         Repeater {
