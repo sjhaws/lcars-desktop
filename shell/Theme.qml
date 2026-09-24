@@ -23,4 +23,8 @@ Singleton {
     // Segment colors cycle through the palette, LCARS style
     readonly property var cycle: [color.orange, color.peach, color.lavender, color.periwinkle]
     function named(name) { return color[name] ?? color.orange }
+    // Sidebar segment heights: LCARS panels mix short and tall blocks
+    function segmentHeight(size) {
+        return size === "short" ? frame.segmentShort : size === "tall" ? frame.segmentTall : frame.segmentHeight
+    }
 }

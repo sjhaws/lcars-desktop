@@ -59,7 +59,11 @@ def main():
     for src, dst in TEMPLATES.items():
         out = REPO / dst
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_text(render((REPO / src).read_text()))
+        # Write to a temp file and rename: Hyprland reloads its config as soon as a
+        # file changes, and must never read a half-written one
+        tmp = out.with_name(out.name + ".tmp")
+        tmp.write_text(render((REPO / src).read_text()))
+        tmp.replace(out)
         print(f"generated {dst}")
 
 

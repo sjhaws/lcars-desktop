@@ -283,3 +283,21 @@ crash files; `lcars-rollback --purge`: 31 changes, 0 problems, both services re-
 list identical. That run logged into GNOME before rolling back, so the home diff lists GNOME's
 own first-login files (Evolution data, XDG folders, user-dirs) and `/etc/whoopsie` (created by
 Ubuntu's crash reporter on the first GNOME login), none of them from LCARS.
+
+## 2026-09-24 — Steven's feedback: unlock in the VM, varied block sizes
+
+**"I can't log back in once I lock."** The VM had been locked for 2.5 min with *no* PAM attempts
+in the journal; typing `lcars` via QEMU (`virsh send-key`) unlocked it immediately. So hyprlock
+works; Steven's keystrokes didn't reach it. Most likely the host GNOME: `Super+L` is GNOME's own
+lock shortcut, and a Super press caught by the host can leave Super "held" inside the VM, so typed
+letters arrive as Super+letter. Workaround in the VM: lock with the LOCK block, click into the VM,
+tap Super once, type. Not an issue on real hardware (no GNOME under LCARS). Open until Steven confirms.
+
+**Variable sizes** (reference: an LCARS panel with mixed block heights and thin divider rules):
+sidebar segments take `"size": "short" | "normal" | "tall"` (32 / 52 / 88 px, tokens
+`frame.segmentShort/segmentHeight/segmentTall`), with a varied default rhythm; hints hide on
+short blocks. The top bar gains a thin divider row of mixed-width blocks (`frame.dividerHeight`).
+
+**Found while testing:** Hyprland auto-reloaded its config while `tools/lcars-gen` was rewriting
+`colors.conf` → every `$lcars_*` variable failed to parse (config-error banner). `lcars-gen` now
+writes to a temp file and renames it into place.

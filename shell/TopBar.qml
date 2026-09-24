@@ -15,7 +15,9 @@ PanelWindow {
     readonly property int pad: Theme.frame.padding
     readonly property int arm: Theme.frame.armHeight
     readonly property int inner: Theme.frame.innerRadius
-    implicitHeight: pad + arm + inner
+    readonly property int divider: Theme.frame.dividerHeight
+    // Room below the arm for the concave corner and the thin divider row
+    implicitHeight: pad + arm + Math.max(inner, Theme.frame.gap * 2 + divider)
     exclusiveZone: implicitHeight
     color: Theme.color.background
 
@@ -62,6 +64,31 @@ PanelWindow {
             width: bar.inner; height: bar.inner
             color: Theme.color.background
             topLeftRadius: bar.inner
+        }
+    }
+
+    // Thin divider row of mixed-width blocks under the arm, like LCARS header rules.
+    // Widths are fractions of the row; one entry (w: 0) takes whatever is left.
+    RowLayout {
+        id: dividerRow
+        anchors { left: parent.left; right: parent.right; top: parent.top
+                  leftMargin: bar.inner + Theme.frame.gap; rightMargin: bar.pad
+                  topMargin: bar.pad + bar.arm + Theme.frame.gap }
+        height: bar.divider
+        spacing: Theme.frame.gap
+        Repeater {
+            model: [
+                { w: 0.05, c: "orange" }, { w: 0.16, c: "lavender" }, { w: 0.02, c: "peach" },
+                { w: 0.09, c: "periwinkle" }, { w: 0, c: "lavender" }, { w: 0.04, c: "orange" },
+                { w: 0.12, c: "peach" }, { w: 0.03, c: "red" }, { w: 0.07, c: "periwinkle" }
+            ]
+            Rectangle {
+                required property var modelData
+                Layout.fillHeight: true
+                Layout.fillWidth: modelData.w === 0
+                Layout.preferredWidth: modelData.w * dividerRow.width
+                color: Theme.named(modelData.c)
+            }
         }
     }
 

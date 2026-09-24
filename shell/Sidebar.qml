@@ -37,7 +37,7 @@ PanelWindow {
                 required property var modelData
                 required property int index
                 Layout.fillWidth: true
-                Layout.preferredHeight: Theme.frame.segmentHeight
+                Layout.preferredHeight: Theme.segmentHeight(modelData.size)
                 label: modelData.label
                 hint: modelData.hint ?? ""
                 fill: modelData.color ? Theme.named(modelData.color) : Theme.cycle[(index + 1) % Theme.cycle.length]

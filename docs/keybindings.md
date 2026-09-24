@@ -49,7 +49,8 @@ periwinkle = low. Click one to open it (if the app offers that) and dismiss it.
 sidebar button (or press `Super+F3`). Each opens your own copy of the menu
 (`~/.config/lcars/menu.json`) in Text Editor. Give it a `label` and a `command`, save,
 and the sidebar updates within two seconds. You can relabel, recolor or reorder any
-segment the same way. `lcars-rollback` keeps this file (it moves it to `~/lcars-backups`).
+segment the same way, and make it `"size": "short"`, `"normal"` or `"tall"` (short blocks show
+only the label). `lcars-rollback` keeps this file (it moves it to `~/lcars-backups`).
 
 If the frame ever fails to start, a red notice appears at the top of the screen; the
 keyboard shortcuts above keep working. Details are in `~/.local/state/lcars/shell.log`.

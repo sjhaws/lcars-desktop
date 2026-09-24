@@ -1,14 +1,14 @@
 {
-  "_help": "Copy this file to ~/.config/lcars/menu.json to change the sidebar (clicking an unset CUSTOM button does that for you). Each entry: id, label, command (any shell command; empty = open this file), optional color (orange, peach, lavender, periwinkle, red) and hint (shortcut shown under the label). Changes apply when you save. The footer (Apps, Exit) is fixed.",
+  "_help": "Copy this file to ~/.config/lcars/menu.json to change the sidebar (clicking an unset CUSTOM button does that for you). Each entry: id, label, command (any shell command; empty = open this file), optional color (orange, peach, lavender, periwinkle, red), size (short, normal, tall) and hint (shortcut shown under the label). Changes apply when you save. The footer (Apps, Exit) is fixed.",
   "segments": [
-    { "id": "terminal", "label": "Terminal", "command": "ptyxis --new-window", "hint": "Super+Return" },
-    { "id": "browser",  "label": "Browser",  "command": "gtk-launch \"$(xdg-settings get default-web-browser)\"", "hint": "Super+B" },
-    { "id": "files",    "label": "Files",    "command": "nautilus --new-window", "hint": "Super+E" },
-    { "id": "editor",   "label": "Editor",   "command": "gnome-text-editor --new-window" },
-    { "id": "monitor",  "label": "Monitor",  "command": "resources" },
-    { "id": "settings", "label": "Settings", "command": "env XDG_CURRENT_DESKTOP=GNOME gnome-control-center" },
-    { "id": "custom1",  "label": "Custom 1", "command": "", "hint": "Super+F1" },
-    { "id": "custom2",  "label": "Custom 2", "command": "", "hint": "Super+F2" }
+    { "id": "terminal", "label": "Terminal", "command": "ptyxis --new-window", "hint": "Super+Return", "size": "tall" },
+    { "id": "browser", "label": "Browser", "command": "gtk-launch \"$(xdg-settings get default-web-browser)\"", "hint": "Super+B", "size": "short" },
+    { "id": "files", "label": "Files", "command": "nautilus --new-window", "hint": "Super+E", "size": "normal" },
+    { "id": "editor", "label": "Editor", "command": "gnome-text-editor --new-window", "size": "short" },
+    { "id": "monitor", "label": "Monitor", "command": "resources", "size": "tall" },
+    { "id": "settings", "label": "Settings", "command": "env XDG_CURRENT_DESKTOP=GNOME gnome-control-center", "size": "short" },
+    { "id": "custom1", "label": "Custom 1", "command": "", "hint": "Super+F1", "size": "normal" },
+    { "id": "custom2", "label": "Custom 2", "command": "", "hint": "Super+F2", "size": "normal" }
   ],
   "footer": [
     { "id": "apps", "label": "Apps", "command": "@launcher", "color": "periwinkle", "hint": "Super+Space" },
