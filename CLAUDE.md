@@ -27,6 +27,13 @@ Full plan, decisions and roadmap: `docs/plan.md`. Read it at the start of every 
 - Sounds: on by default, mute toggle in the bar
 - Shell toolkit: Quickshell — chosen after the Phase 1 bake-off against AGS/Astal (see `docs/test-log.md`)
 
+## Safety-net decisions (confirmed 2026-09-24, after Phase 1 rehearsals)
+
+- Hyprland's crash-on-exit: silence apport for `/usr/bin/Hyprland` per user (`~/.apport-ignore.xml`), added by install.sh, removed by rollback
+- Frozen compositor: rely on the lcars-session hang watchdog (~45 s); do not enable Magic SysRq or touch `/etc`
+- Crash-guard fallback: one-time GNOME notification via a self-deleting `~/.config/autostart` entry, plus `~/LCARS-NOTE.txt`
+- Stock "Hyprland" GDM entry: hide with `dpkg-divert` (install.sh), restore with `dpkg-divert --remove` (rollback)
+
 ## Host machine
 
 - Ubuntu 26.04.1 LTS, ext4, 14 GB RAM, KVM available

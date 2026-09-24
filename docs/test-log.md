@@ -66,11 +66,11 @@ Snapshots: `clean-install` → `pre-deploy` (+ Timeshift configured, rsync mode 
 | 4 | `touch ~/.lcars-off` (over SSH) → next login goes to Ubuntu | **PASS**. LCARS chosen at GDM → Ubuntu session, Hyprland never started, note written |
 | 5 | Restore pre-deploy Timeshift snapshot | **PASS with caveats.** `timeshift --restore --skip-grub --yes` (run over SSH while LCARS was logged in) removed all 50 packages and the session file and reset the default session. It did **not** reboot by itself and left the display dead ("Display output is not active"); `sudo reboot` needed. Timeshift excludes `/home`, so home leftovers remain until `lcars-rollback` is run (7 changes, 0 problems; tolerated the already-removed system parts). Live-USB variant **not rehearsed** |
 
-### Open issues for Steven
+### Open issues (decisions from Steven, 2026-09-24, in brackets)
 
-1. **Crash popup after exiting LCARS.** Hyprland 0.53.3's segfault on exit leaves an apport report, so the next GNOME login shows "Ubuntu 26.04 has experienced an internal error". Harmless, but on every exit.
+1. **Crash popup after exiting LCARS.** Hyprland 0.53.3's segfault on exit leaves an apport report, so the next GNOME login shows "Ubuntu 26.04 has experienced an internal error". Harmless, but on every exit. [Silence apport for Hyprland per user; install/rollback pair]
 2. **Freeze recovery takes ~45 s** (watchdog). A faster manual route needs Magic SysRq "unraw" (`Alt+SysRq+R`), which Ubuntu disables; enabling it means a documented `/etc/sysctl.d` file.
-3. **Crash-guard note is only a file** (`~/LCARS-NOTE.txt`); nothing tells you on screen why you landed in Ubuntu.
+3. **Crash-guard note is only a file** (`~/LCARS-NOTE.txt`); nothing tells you on screen why you landed in Ubuntu. [One-time GNOME notification]
 4. **`lcars-rollback` is on `PATH` only in login shells** (console, interactive SSH). In a one-off SSH command use `~/.local/bin/lcars-rollback`.
-5. **Unguarded "Hyprland" entry in the GDM gear menu** comes from Ubuntu's package.
+5. **Unguarded "Hyprland" entry in the GDM gear menu** comes from Ubuntu's package. [Hide with `dpkg-divert`; rollback restores]
 6. VM test user: `steven` / `lcars`, passwordless sudo (VM only).
