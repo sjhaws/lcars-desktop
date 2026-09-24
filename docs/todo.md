@@ -15,7 +15,9 @@ Open items and ideas, newest requests first. Phase work follows `docs/plan.md`.
 
 - [x] Lock screen (hyprlock) and idle (hypridle)
 - [x] Interface sounds, on by default, with their own mute toggle (SFX pill)
-- [ ] GTK and Qt themes from the palette (Files, Settings and other apps in LCARS colors)
+- [x] App look, LCARS session only: libadwaita apps dark with orange accent (session env vars)
+- [ ] Deeper LCARS app styling (true black, palette colors, Antonio headings) — needs a
+  per-session stylesheet that GNOME never sees; libadwaita accents are limited to a fixed set
 - [ ] Multi-monitor: frame on every screen, workspaces per monitor
 
 ## Small polish

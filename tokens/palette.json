@@ -44,5 +44,11 @@
     "headerArm": 12,
     "headerRadius": 30,
     "footHeight": 22
+  },
+  "apps": {
+    "colorScheme": "prefer-dark",
+    "accent": "orange",
+    "cursorTheme": "Yaru",
+    "cursorSize": 24
   }
 }

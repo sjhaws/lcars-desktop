@@ -59,6 +59,13 @@ only the label). `lcars-rollback` keeps this file (it moves it to `~/lcars-backu
 If the frame ever fails to start, a red notice appears at the top of the screen; the
 keyboard shortcuts above keep working. Details are in `~/.local/state/lcars/shell.log`.
 
+## App look
+
+Inside LCARS, modern GNOME apps (Files, Settings, Text Editor, Calculator…) run in dark mode
+with an orange accent. This is set only for the LCARS session (environment variables), so
+the same apps look normal in the Ubuntu session. The choice lives in `tokens/palette.json`
+under `apps`.
+
 ## Sounds
 
 Buttons chirp, the launcher and launched apps have their own tones, and notifications play an

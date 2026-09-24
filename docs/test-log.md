@@ -327,3 +327,19 @@ writes to a temp file and renames it into place.
 - VM test (PipeWire monitor counting `pw-play` streams): button click → 1 stream; SFX off → 0 and
   saved false; click while muted → 0; SFX on → 1 (confirm) and saved true; notification → 1
 - The VM's sound card isn't routed to the host, so the sounds can't be heard in the VM
+
+## 2026-09-24 — Phase 4 (part 3): app look, LCARS session only
+
+- `hypr/env.conf.in` → generated `env.conf` (tokens `apps`): `ADW_DEBUG_COLOR_SCHEME=prefer-dark`,
+  `ADW_DEBUG_ACCENT_COLOR=orange`, `QT_QPA_PLATFORMTHEME=gtk3`, cursor theme/size. No theme files,
+  so GNOME never sees them
+- **`GTK_THEME` rejected:** with it set, libadwaita drops its own stylesheet; Files lost its
+  sidebar and Settings its styled lists (screenshot). Removed
+- **Leak found and fixed:** the variables are also handed to systemd and the D-Bus session bus (so
+  D-Bus-started apps get them). Files started by D-Bus in a following GNOME session still had
+  them, because the user bus outlives the session (logind keeps the user manager ~10 s, longer if
+  another session is open). `lcars-session` now resets them on every way the session ends
+  (clean exit, Ubuntu fallback, TERM/HUP): unset in systemd, empty in D-Bus (D-Bus can't unset;
+  libadwaita ignores empty values silently, checked)
+- VM: Files, Text Editor, Settings dark with orange accent in LCARS (screenshot); after a quick
+  switch to Ubuntu, D-Bus-started Files has only empty values

@@ -31,6 +31,18 @@ mkdir -p "$STATE"
 
 log() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
 
+# The LCARS app look (hypr/env.conf) is also handed to systemd and the D-Bus session
+# bus so D-Bus-started apps get it. Both outlive this session by a few seconds or
+# more, so take it back whenever LCARS ends; otherwise a quick switch to Ubuntu
+# would inherit it. D-Bus can't unset variables: empty values are ignored by apps.
+APP_LOOK_VARS="ADW_DEBUG_COLOR_SCHEME ADW_DEBUG_ACCENT_COLOR QT_QPA_PLATFORMTHEME XCURSOR_THEME XCURSOR_SIZE"
+reset_app_look() {
+  systemctl --user unset-environment $APP_LOOK_VARS 2>/dev/null
+  dbus-update-activation-environment ADW_DEBUG_COLOR_SCHEME= ADW_DEBUG_ACCENT_COLOR= QT_QPA_PLATFORMTHEME= 2>/dev/null
+}
+trap reset_app_look EXIT
+trap 'exit 143' TERM HUP INT
+
 recent_crashes() {
   local now; now=$(date +%s)
   [ -f "$CRASHES" ] || { echo 0; return; }
@@ -65,7 +77,8 @@ DESKTOP
   # Present ourselves as the stock "ubuntu" session so GNOME loads its normal mode
   export XDG_CURRENT_DESKTOP=ubuntu:GNOME XDG_SESSION_DESKTOP=ubuntu DESKTOP_SESSION=ubuntu
   export GNOME_SHELL_SESSION_MODE=ubuntu
-  unset HYPRLAND_INSTANCE_SIGNATURE AQ_DRM_DEVICES
+  unset HYPRLAND_INSTANCE_SIGNATURE AQ_DRM_DEVICES $APP_LOOK_VARS
+  reset_app_look
   systemctl --user import-environment XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
     DESKTOP_SESSION GNOME_SHELL_SESSION_MODE 2>/dev/null
   dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
