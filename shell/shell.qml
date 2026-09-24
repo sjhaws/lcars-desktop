@@ -17,9 +17,21 @@ ShellRoot {
         }
     }
 
-    // Keyboard parity for the menu: `quickshell -p <shell> ipc call menu activate custom1`
+    Launcher { id: launcher }
+    Notifications {}
+    Connections {
+        target: Menu
+        function onLauncherRequested() { launcher.toggle() }
+    }
+
+    // Keyboard parity: `quickshell -p <shell> ipc call menu activate custom1`,
+    // `... ipc call launcher toggle`
     IpcHandler {
         target: "menu"
         function activate(id: string): void { Menu.activate(id) }
+    }
+    IpcHandler {
+        target: "launcher"
+        function toggle(): void { launcher.toggle() }
     }
 }

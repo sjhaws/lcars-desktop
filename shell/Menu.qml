@@ -43,7 +43,10 @@ Singleton {
     readonly property var userConfig: parse(userText)
     readonly property var config: userConfig?.segments ? userConfig : parse(defaults.text())
     readonly property var segments: config?.segments ?? []
-    readonly property var footer: config?.footer ?? []
+    // The footer (Apps, Exit) always comes from the defaults, so a copied user
+    // file can't end up pointing at a launcher that no longer exists
+    readonly property var footer: parse(defaults.text())?.footer ?? []
+    signal launcherRequested()
 
     function find(id) {
         return segments.concat(footer).find(s => s.id === id)
@@ -51,6 +54,8 @@ Singleton {
     function activate(id) {
         const s = find(id)
         if (!s) return
+        // "@launcher" is built into the shell
+        if (s.command === "@launcher") { launcherRequested(); return }
         // An unset custom button opens the menu file so it can be set
         const cmd = s.command && s.command.length ? s.command : customizeScript
         Quickshell.execDetached(["sh", "-c", cmd])

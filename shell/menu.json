@@ -1,5 +1,5 @@
 {
-  "_help": "Copy this file to ~/.config/lcars/menu.json to change the sidebar (clicking an unset CUSTOM button does that for you). Each entry: id, label, command (any shell command; empty = open this file), optional color (orange, peach, lavender, periwinkle, red) and hint (shortcut shown under the label). Changes apply when you save.",
+  "_help": "Copy this file to ~/.config/lcars/menu.json to change the sidebar (clicking an unset CUSTOM button does that for you). Each entry: id, label, command (any shell command; empty = open this file), optional color (orange, peach, lavender, periwinkle, red) and hint (shortcut shown under the label). Changes apply when you save. The footer (Apps, Exit) is fixed.",
   "segments": [
     { "id": "terminal", "label": "Terminal", "command": "ptyxis --new-window", "hint": "Super+Return" },
     { "id": "browser",  "label": "Browser",  "command": "gtk-launch \"$(xdg-settings get default-web-browser)\"", "hint": "Super+B" },
@@ -11,7 +11,7 @@
     { "id": "custom2",  "label": "Custom 2", "command": "", "hint": "Super+F2" }
   ],
   "footer": [
-    { "id": "apps", "label": "Apps", "command": "fuzzel", "color": "periwinkle", "hint": "Super+Space" },
+    { "id": "apps", "label": "Apps", "command": "@launcher", "color": "periwinkle", "hint": "Super+Space" },
     { "id": "exit", "label": "Exit", "command": "~/.config/hypr/scripts/exit", "color": "red", "hint": "Super+Shift+Esc" }
   ]
 }

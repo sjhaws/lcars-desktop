@@ -7,7 +7,9 @@ Rectangle {
     property string label: ""
     property string hint: ""
     property color fill: Theme.color.orange
+    readonly property real labelWidth: text.implicitWidth
     signal activated()
+    signal scrolled(real delta)
 
     color: area.pressed ? Qt.lighter(fill, 1.35) : area.containsMouse ? Qt.lighter(fill, 1.15) : fill
     Behavior on color { ColorAnimation { duration: 80 } }
@@ -33,5 +35,6 @@ Rectangle {
         hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
         onClicked: seg.activated()
+        onWheel: wheel => seg.scrolled(wheel.angleDelta.y)
     }
 }
