@@ -2,3 +2,6 @@
 *.qcow2
 *.img
 /vm/.state/
+hypr/generated/
+fuzzel/fuzzel.ini
+mako/config

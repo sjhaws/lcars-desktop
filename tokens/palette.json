@@ -9,9 +9,24 @@
     "textOnColor": "#000000",
     "textOnBlack": "#FFCC99"
   },
+  "role": {
+    "borderActive": "orange",
+    "borderInactive": "lavender",
+    "borderInactiveAlpha": 0.45,
+    "borderUrgent": "red",
+    "groupActive": "orange",
+    "groupInactive": "periwinkle",
+    "wallpaperDim": 0.28
+  },
   "font": {
     "family": "Antonio",
     "weight": 600,
     "size": 18
+  },
+  "shape": {
+    "border": 4,
+    "rounding": 16,
+    "gapsIn": 6,
+    "gapsOut": 12
   }
 }
