@@ -119,3 +119,51 @@ System-level changes made by `install.sh` are now: apt packages, `/usr/share/way
 ### Not testable in the VM (for the real-hardware test)
 
 Brightness keys, touchpad gestures, lid/suspend, the dock and multiple monitors, NVIDIA/Intel switching.
+
+## 2026-09-24 — Phase 3 (part 1): LCARS frame with a working menu
+
+Steven's direction after trying Phase 2: the elbow is a **functional menu**. Decisions: always
+visible (screen space reserved), classic left sidebar + top bar, segments Terminal, Browser,
+Files, Editor, Monitor (`resources`), Settings, 2 custom buttons, Apps, Exit.
+
+### What was built
+
+- `shell/` (Quickshell 0.3.1): `Sidebar.qml` (elbow, menu segments, filler, footer),
+  `TopBar.qml` (arm with concave inner corner, workspaces 1–5, stardate, clock, mute),
+  `Theme.qml` (reads `tokens/palette.json`, which gains `frame` sizes), `Menu.qml`
+- Menu from `shell/menu.json`, overridden by `~/.config/lcars/menu.json`; an unset custom button
+  opens that file (created from the defaults) in Text Editor; `Super+F1/F2` call the custom
+  buttons through Quickshell IPC
+- The wallpaper elbow and hyprpaper are gone (the frame is real now); background is black
+- `install.sh` builds Quickshell from the pinned v0.3.1 tag into `~/.local` and records every
+  new file; `~/.config/lcars` is recorded as user data (rollback moves it to `~/lcars-backups`)
+
+### Problems found and fixed
+
+| Problem | Fix |
+| --- | --- |
+| Build: no C++ compiler, then no `egl` pkg-config module | Added `g++`, `libegl-dev` (checked every `pkg_check_modules` in the source) |
+| Build: "Disk quota exceeded": `/tmp` is a 2.7 GB tmpfs with per-user quota on 26.04 | Build in `~/.cache/lcars-build` (removed afterwards, `rundir` for rollback), `Release` instead of `RelWithDebInfo`; build output to a log, tail shown on failure |
+| New `-dev` packages pulled Ubuntu security updates (PipeWire, libexpat) the VM lacked; rollback doesn't downgrade them | Correct behaviour. `pre-deploy` snapshot refreshed with all updates (like a maintained host); `install.sh` now prints any upgrades of installed packages |
+| CMake's `install_manifest.txt` misses the `qs` link and the icon | Record new files by diffing `~/.local` before/after |
+| `IpcHandler is not a type` → no frame at all | Missing `import Quickshell.Io` |
+| Top bar offset twice by the sidebar width | Hyprland already places it after the sidebar's exclusive zone; margin removed |
+| Custom-menu edits not picked up | The file may not exist at start, and editors save by replacing it; `Menu.qml` now polls it every 2 s and only rebuilds when the content changes |
+| Unprivileged `/tmp` file from an earlier run blocked a root-owned log (fs.protected_regular) | Test tooling only |
+
+### Tests (VM, fully updated `pre-deploy`)
+
+| Test | Result |
+| --- | --- |
+| Install incl. Quickshell build | **PASS**, no upgrades of installed packages needed |
+| Frame at login (screenshot) | **PASS**: elbow + concave corner, segments with shortcut hints, footer, top bar readouts |
+| Clicks: Terminal, workspace 2, CUSTOM 1 (opens menu file), EXIT (back to GDM) | **PASS** |
+| Edit menu file → sidebar relabels (CALCULATOR, red TOP) within 2 s; `Super+F1` opens Calculator | **PASS** |
+| Exit → Ubuntu: no quickshell/helpers left, no crash files or dialogs (only Hyprland's known, ignored exit segfault in the kernel log) | **PASS** |
+| `lcars-rollback --purge` (with a custom menu present) | **PASS**: 31 changes, 0 problems; menu moved to `~/lcars-backups/lcars-<time>`; same three intended leftovers |
+
+### Open
+
+- If the shell's QML fails to load, LCARS has no frame (keyboard shortcuts still work). Phase 3
+  should make lcars-session or Hyprland notice and show a message.
+- `prototypes/ags` is obsolete; kept for the record of the bake-off.
