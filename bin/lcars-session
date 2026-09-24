@@ -100,8 +100,13 @@ pick_gpu() {
     esac
   done
   [ -n "$igpu" ] && [ -n "$dgpu" ] || return 0
-  if [ "$docked" = 1 ]; then export AQ_DRM_DEVICES="$dgpu:$igpu"
-  else export AQ_DRM_DEVICES="$igpu"; fi
+  if [ "$docked" = 1 ]; then
+    export AQ_DRM_DEVICES="$dgpu:$igpu"
+    # Rendering on NVIDIA: what Hyprland's NVIDIA guide asks for (video decode, GLX)
+    export LIBVA_DRIVER_NAME=nvidia __GLX_VENDOR_LIBRARY_NAME=nvidia NVD_BACKEND=direct
+  else
+    export AQ_DRM_DEVICES="$igpu"
+  fi
   log "hybrid graphics: docked=$docked AQ_DRM_DEVICES=$AQ_DRM_DEVICES"
 }
 
@@ -153,6 +158,9 @@ while :; do
   wait "$hpid"
   rc=$?
   kill "$wpid" 2>/dev/null; wait "$wpid" 2>/dev/null
+  # Hyprland's own log lives in $XDG_RUNTIME_DIR, which is wiped at logout: keep a copy
+  hlog="$(ls -t "$XDG_RUNTIME_DIR"/hypr/*/hyprland.log 2>/dev/null | head -n1)"
+  [ -n "$hlog" ] && tail -n 3000 "$hlog" > "$STATE/hyprland-last.log" 2>/dev/null
   if [ -e "$EXIT_MARKER" ] || [ "$rc" -eq 0 ]; then
     rm -f "$EXIT_MARKER"
     log "Hyprland exited on request (exit $rc); ending session"

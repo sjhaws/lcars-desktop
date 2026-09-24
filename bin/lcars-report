@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+# lcars-report — collect what's needed to diagnose an LCARS session into one file
+# (run it from the Ubuntu session or a console after trying LCARS):
+#   ~/lcars-report-<date>.txt
+# It only reads: GPU and screen state, LCARS logs, crashes, kernel graphics errors.
+out="$HOME/lcars-report-$(date +%Y%m%d-%H%M%S).txt"
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/lcars"
+section() { printf '\n===== %s =====\n' "$*"; }
+{
+  echo "LCARS report $(date '+%F %T') on $(hostname)"
+  section "system";  lsb_release -ds 2>/dev/null; uname -r; echo "session: ${XDG_SESSION_TYPE:-?} ${XDG_CURRENT_DESKTOP:-?}"
+  section "GPUs and connectors"
+  for c in /sys/class/drm/card[0-9]; do
+    echo "$(basename "$c"): $(basename "$(readlink -f "$c/device/driver")" 2>/dev/null)"
+    for o in "$c"-*; do [ -e "$o/status" ] && echo "   $(basename "$o"): $(cat "$o/status")"; done
+  done
+  cat /proc/driver/nvidia/version 2>/dev/null | head -n1
+  section "installed versions"
+X
+  section "session.log (crash guard)";   tail -n 80 "$STATE/session.log" 2>/dev/null
+  section "shell.log (Quickshell)";      tail -n 80 "$STATE/shell.log" 2>/dev/null
+  section "crash history";               cat "$STATE/crashes" 2>/dev/null; cat "$HOME/LCARS-NOTE.txt" 2>/dev/null
+  section "hyprland-last.log (errors and warnings)"
+  grep -aE "ERR|WARN|CRIT|rror|nvidia|drm:|Monitor|monitor" "$STATE/hyprland-last.log" 2>/dev/null | tail -n 120
+  section "Hyprland stdout (hyprland.log)"; tail -n 40 "$STATE/hyprland.log" 2>/dev/null
+  section "coredumps this boot"
+  coredumpctl list --since "$(uptime -s)" --no-pager 2>/dev/null | grep -iE "hypr|quickshell|xdg-desktop|polkit" || echo "(none)"
+  section "kernel graphics messages this boot (errors/warnings)"
+  journalctl -k -b --no-pager -p warning 2>/dev/null | grep -iE "drm|nvidia|i915|gpu" | tail -n 40
+  section "user journal: LCARS-related errors this boot"
+  journalctl --user -b --no-pager -p warning 2>/dev/null | grep -iE "hypr|quickshell|lcars|portal" | tail -n 40
+} > "$out" 2>&1
+echo "$out"

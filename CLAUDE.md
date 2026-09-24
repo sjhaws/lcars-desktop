@@ -40,7 +40,8 @@ Full plan, decisions and roadmap: `docs/plan.md`. Read it at the start of every 
 - Ubuntu 26.04.1 LTS, ext4, 14 GB RAM, KVM available
 - Laptop with hybrid graphics: Intel UHD (CometLake-H, i915) + NVIDIA GTX 1660 Ti Mobile, proprietary driver 595.91.07
 - Usually docked via ThinkPad USB-C Dock Gen 2 with two external 1920x1080 monitors
-- Display wiring: laptop panel eDP-1 -> Intel (card1); dock monitors DP-2 and DP-3 -> NVIDIA (card2)
+- Display wiring: laptop panel eDP-1 -> Intel (i915); dock monitors DP-2 and DP-3 -> NVIDIA. The cardN numbers swap between boots (2026-09-24: NVIDIA card1, Intel card2), so always select GPUs by driver, never by number
+- nvidia-drm modeset=1 (Ubuntu default), NVIDIA open kernel module, nvidia-suspend/resume/hibernate enabled, PreserveVideoMemoryAllocations=1
 - `lcars-session` should detect the dock and render on NVIDIA when docked, Intel when undocked
 - The VM cannot test the dock or real GPUs — a hands-on real-hardware dock test is required before deploy (see stability criteria)
 - Test VM budget: 4 cores, 6 GB RAM, 40 GB disk
