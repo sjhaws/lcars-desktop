@@ -88,3 +88,34 @@ Retested from `pre-deploy` (install) and `installed` (routes, rollback).
 | `lcars-rollback --purge` after use | Fingerprint + `/etc` + `/var/lib/dpkg/diversions` vs pre-install | **PASS**: 13 changes, 0 problems; diversions removed before the purge, apport file removed (install created it), no autostart dir left. Remaining differences as before: `~/lcars-backups/`, default session `"ubuntu"`, `~/.local/share` kept because the login itself put files in it |
 
 System-level changes made by `install.sh` are now: apt packages, `/usr/share/wayland-sessions/lcars.desktop`, and two local dpkg diversions. Nothing under `/etc`.
+
+## 2026-09-24 — Phase 2: base session
+
+### What was built
+
+- `tokens/palette.json` extended with roles (border/group colors, inactive alpha, wallpaper dim) and shape sizes
+- `tools/lcars-gen` (Python stdlib only) renders `*.in` templates and an original wallpaper PNG from the tokens → `hypr/generated/{colors.conf,hyprpaper.conf,wallpaper.png}`, `fuzzel/fuzzel.ini`, `mako/config` (all gitignored; `install.sh` runs it)
+- Hyprland config split into `look`, `input`, `keybinds`, `rules`, `autostart`; no hard-coded colors
+- LCARS frames: 4 px orange active / 45 % lavender inactive borders, 16 px rounding, no shadow/blur, quick animations; tabbed groups with LCARS-colored tabs in Antonio
+- Antonio font shipped in `fonts/` (OFL 1.1) and linked into `~/.local/share/fonts/lcars`
+- Stopgaps until Phase 3 (Steven's choice): fuzzel launcher, mako notifications, both from tokens
+- Keybindings: see `docs/keybindings.md`
+
+### Tests (VM, all from `pre-deploy`)
+
+| Test | Result |
+| --- | --- |
+| `Hyprland --verify-config`, `hyprctl configerrors` | `config ok`, no errors |
+| Install | **PASS** (79 packages recorded) after fixing: apt failed on the dpkg lock held by PackageKit just after boot → `DPkg::Lock::Timeout=300` in install and rollback |
+| Frames, wallpaper, launcher, notification | **PASS** (screenshots). Wallpaper switched to `fit_mode = contain` so the whole design shows on 16:10 screens |
+| Terminal, Files, Firefox (snap), polkit prompt (floats centered), tabbed group, volume keys, screenshot to `~/Pictures/Screenshots` + clipboard | **PASS**. Fixed: `xdg-user-dir` answers `$HOME` when Pictures isn't configured; `Super+B` now launches the default browser via `gtk-launch` |
+| `hyprland-guiutils` notice at every login | Fixed: not packaged for Ubuntu → `misc:disable_hyprland_guiutils_check`, ANR dialog off |
+| **Helpers leaking into the Ubuntu session** | **Found and fixed.** The `hyprpaper`, `hyprpolkitagent` and `mako` packages enable user services for *every* graphical login: they ran inside GNOME (a second polkit agent), hyprpaper ran twice in LCARS. `install.sh` now masks those three user services for the user (`systemctl --user mask`, undone by rollback); LCARS starts them itself |
+| **Helper crash dialogs after exit** | **Found and fixed.** hyprpolkitagent, hyprpaper and xdg-desktop-portal-hyprland aborted when Hyprland exited → apport dialogs in GNOME. `hypr/scripts/exit` now stops them before exiting (no crashes at all on a normal exit, kernel log clean), and they're on the per-user apport ignore list for the crash path |
+| LCARS → exit → Ubuntu | **PASS**: 0 Hyprland helpers in GNOME, no crash files, no dialog |
+| Route 2 (3 crashes) | **PASS**: Ubuntu + notification, no helper crash dialogs |
+| `lcars-rollback --purge` | **PASS**: 23 changes, 0 problems; `/etc` and dpkg diversions identical; same three intended leftovers as Phase 1 |
+
+### Not testable in the VM (for the real-hardware test)
+
+Brightness keys, touchpad gestures, lid/suspend, the dock and multiple monitors, NVIDIA/Intel switching.
