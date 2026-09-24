@@ -1,0 +1,9 @@
+#!/bin/sh
+# Open the user's sidebar menu file in Text Editor, creating it from the defaults
+# first. The shell reloads the sidebar whenever the file is saved.
+file="$HOME/.config/lcars/menu.json"
+if [ ! -f "$file" ]; then
+  mkdir -p "$(dirname "$file")"
+  cp "$(dirname "$(readlink -f "$0")")/menu.json" "$file"
+fi
+exec gnome-text-editor --new-window "$file"
