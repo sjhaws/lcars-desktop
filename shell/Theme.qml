@@ -20,9 +20,9 @@ Singleton {
     readonly property string font: tokens.font.family
     readonly property int fontWeight: tokens.font.weight
 
-    // Frame geometry. Every panel is placed at a fixed position from these numbers,
-    // and the space windows must keep free is told to Hyprland (shell.qml), so the
-    // layout never depends on the order in which the panels appear.
+    // Frame geometry. Every panel is placed at a fixed position from these numbers
+    // and invisible Reserver panels keep that space free for windows (shell.qml), so
+    // the layout never depends on the order in which the panels appear.
     readonly property int headerHeight: frame.padding + frame.headerTitle + frame.gap + frame.headerArm
     readonly property int readoutHeight: frame.padding + frame.armHeight + frame.innerRadius
     readonly property int bottomHeight: frame.padding + frame.footHeight + frame.innerRadius

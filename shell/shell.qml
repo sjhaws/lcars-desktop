@@ -16,6 +16,19 @@ ShellRoot {
         Scope {
             id: perScreen
             required property var modelData
+            // Space kept free for windows: the frame, or just the compact line
+            Reserver {
+                screen: perScreen.modelData; edge: "top"
+                size: Settings.compact ? Theme.frame.compactHeight : Theme.headerHeight + Theme.readoutHeight
+            }
+            Reserver {
+                screen: perScreen.modelData; edge: "left"
+                size: Settings.compact ? 0 : Theme.frame.sidebarWidth
+            }
+            Reserver {
+                screen: perScreen.modelData; edge: "bottom"
+                size: Settings.compact ? 0 : Theme.bottomHeight
+            }
             LazyLoader {
                 active: root.frameShown
                 Frame { screen: perScreen.modelData }
@@ -45,29 +58,23 @@ ShellRoot {
         target: "frame"
         function toggleCompact(): void { Sounds.play("open"); Settings.toggleCompact() }
     }
-    // Tell Hyprland how much of each screen edge the frame (or the compact line)
-    // occupies, and use tighter window gaps in compact mode. If the shell isn't
-    // running, nothing is reserved and apps simply get the whole screen.
+    // Tighter window gaps in compact mode. Gaps are a runtime setting, so they are
+    // re-applied after a config reload (e.g. after editing hypr/*.conf).
     Connections {
         target: Settings
-        function onCompactChanged() { root.applyLayout() }
-        function onLoadedChanged() { root.applyLayout() }
+        function onCompactChanged() { root.applyGaps() }
+        function onLoadedChanged() { root.applyGaps() }
     }
-    Component.onCompleted: applyLayout()
-    // A config reload (e.g. after editing hypr/*.conf) resets runtime settings
+    Component.onCompleted: applyGaps()
     Connections {
         target: Hyprland
-        function onRawEvent(event) { if (event.name === "configreloaded") root.applyLayout() }
+        function onRawEvent(event) { if (event.name === "configreloaded") root.applyGaps() }
     }
-    function applyLayout() {
+    function applyGaps() {
         const c = Settings.compact
-        const top = c ? Theme.frame.compactHeight : Theme.headerHeight + Theme.readoutHeight
-        const bottom = c ? 0 : Theme.bottomHeight
-        const left = c ? 0 : Theme.frame.sidebarWidth
         const gIn = c ? Theme.frame.compactGapsIn : Theme.tokens.shape.gapsIn
         const gOut = c ? Theme.frame.compactGapsOut : Theme.tokens.shape.gapsOut
         Quickshell.execDetached(["hyprctl", "--batch",
-            `keyword monitor ,addreserved,${top},${bottom},${left},0 ; ` +
             `keyword general:gaps_in ${gIn} ; keyword general:gaps_out ${gOut}`])
     }
 

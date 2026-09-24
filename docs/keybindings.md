@@ -27,6 +27,8 @@
 | `Super+]` / `Super+[` | Next / previous workspace (also `Super+PgDn/PgUp` and `Super+Alt+→/←`, as in GNOME) |
 | `Super+Shift+]` / `Super+Shift+[` | Take the window to the next / previous workspace |
 | `` Super+` `` | Back to the last workspace you were on |
+| `Super+,` / `Super+.` | Focus the screen to the left / right |
+| `Super+Shift+←/→` at a screen's edge | Move the window onto the neighbouring screen |
 | `Super+S` / `Super+Shift+S` | Show / send to the scratch workspace |
 | `Print` / `Shift+Print` | Screenshot of a region / whole screen → `~/Pictures/Screenshots` and clipboard |
 | Volume, mute, brightness, media keys | Work as labelled |
@@ -59,6 +61,12 @@ only the label). `lcars-rollback` keeps this file (it moves it to `~/lcars-backu
 
 If the frame ever fails to start, a red notice appears at the top of the screen; the
 keyboard shortcuts above keep working. Details are in `~/.local/state/lcars/shell.log`.
+
+## Several screens
+
+Every screen gets its own LCARS frame. With more than one screen, each readout bar shows the
+workspaces on *its* screen: orange is the one showing on the screen you're using, peach the
+one showing on another screen. Screens can be plugged in or removed at any time.
 
 ## Compact mode
 

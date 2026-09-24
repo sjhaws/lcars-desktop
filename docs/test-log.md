@@ -361,3 +361,26 @@ writes to a temp file and renames it into place.
   at identical positions every time; terminal at 8,18 1264×774 compact and 166,130 full
   (= 150 sidebar + 12 gap + 4 border; 64 header + 50 bar + 12 + 4); unchanged after `hyprctl reload`.
   Closed panels linger briefly in `hyprctl layers` with pid -1 but aren't drawn
+
+## 2026-09-24 — Phase 4 (part 4): multi-monitor
+
+- The VM's virtio-gpu got `heads=3` (create.sh and the snapshots), but QEMU reports extra heads
+  as disconnected without a desktop viewer attached. Tests use Hyprland headless outputs instead
+  (`hyprctl output create headless DOCK-1`, 1920×1080, with `monitor =` position rules like a
+  real dock), captured with `grim -o`
+- The frame appears on every screen (Quickshell `Variants` over `Quickshell.screens`), including
+  screens added later; unplugging removes that screen's panels
+- **Bug found and fixed:** the per-name `keyword monitor NAME,addreserved,...` used in compact
+  mode *replaces the monitor's whole rule* in Hyprland 0.53: screens fell back to 800×600 /
+  1280×720 and all moved to 0×0. On the real dock that would scramble the layout. Replaced by
+  invisible `Reserver.qml` panels (top/left/bottom per screen) whose exclusive zones reserve the
+  space; reserved space adds up the same whatever order they appear in. Compact mode just
+  changes their sizes; the shell only sets window gaps at runtime
+- Readout bar: with several screens it shows that screen's workspaces (orange = active on the
+  focused screen, peach = active on another screen)
+- Keys: `Super+,/.` focus screen left/right. `movewindow mon:l` fails in 0.53 ("Monitor l not
+  found") and `mon:-1` wraps oddly, so windows cross screens with `Super+Shift+←/→` at the edge
+- VM (3 screens, DOCK rules at 1280×0 and 3200×0): positions and resolutions kept; reserved
+  `150 114 0 44` on all three, `0 10 0 0` in compact; terminal moved onto DOCK-1 at
+  1446,130 (= 1280 + 166); `Super+.` focused the right screen; unplugging DOCK-2 left 2 × 7 panels
+- Not testable here: the real laptop panel + dock screens and GPU switching (real-hardware test)

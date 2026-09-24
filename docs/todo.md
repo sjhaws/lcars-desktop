@@ -17,7 +17,9 @@ Open items and ideas, newest requests first. Phase work follows `docs/plan.md`.
 - [x] App look, LCARS session only: libadwaita apps dark with orange accent (session env vars)
 - [ ] Deeper LCARS app styling (true black, palette colors, Antonio headings) — needs a
   per-session stylesheet that GNOME never sees; libadwaita accents are limited to a fixed set
-- [ ] Multi-monitor: frame on every screen, workspaces per monitor
+- [x] Multi-monitor: frame on every screen, per-screen workspaces, hot-plug, screen keys
+- [ ] Arrange the real screens (eDP-1 laptop, DP-2/DP-3 dock) with `monitor =` rules during
+  the real-hardware test; `auto` placement moves screens around when one is unplugged
 
 ## Small polish
 

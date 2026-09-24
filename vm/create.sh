@@ -66,7 +66,7 @@ virt-install \
   --network network=default,model=virtio \
   --graphics vnc,listen=127.0.0.1,port="$VM_VNC_PORT" \
   --graphics egl-headless,gl.rendernode="$VM_RENDERNODE" \
-  --video virtio,accel3d=yes \
+  --video virtio,accel3d=yes,heads=3 \
   --input tablet,bus=virtio \
   --noautoconsole --wait -1
 

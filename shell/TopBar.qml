@@ -32,11 +32,21 @@ PanelWindow {
         return Math.round(p <= 1 ? p * 100 : p)
     }
 
-    // Workspaces 1-5 always, more when a higher one is in use or focused
-    readonly property int workspaceCount: {
-        let n = 5
-        for (const w of Hyprland.workspaces.values) if (w.id > n && w.id <= 10) n = w.id
-        return n
+    // This screen's Hyprland monitor and the workspaces to show on its bar:
+    // one screen: 1-5 always, more when a higher one is in use; several screens:
+    // the workspaces that live on this screen (always including its active one)
+    readonly property var monitor: Hyprland.monitorFor(bar.screen)
+    readonly property int activeWs: monitor?.activeWorkspace?.id ?? -1
+    readonly property var workspaceIds: {
+        const all = Hyprland.workspaces.values.filter(w => w.id > 0)
+        if (Quickshell.screens.length <= 1) {
+            let n = 5
+            for (const w of all) if (w.id > n && w.id <= 10) n = w.id
+            return Array.from({ length: n }, (_, i) => i + 1)
+        }
+        const ids = all.filter(w => w.monitor?.name === bar.screen?.name).map(w => w.id)
+        if (activeWs > 0 && !ids.includes(activeWs)) ids.push(activeWs)
+        return ids.sort((a, b) => a - b)
     }
 
     component Readout: Segment {
@@ -65,14 +75,18 @@ PanelWindow {
         Rectangle { Layout.preferredWidth: 40; Layout.fillHeight: true; color: Theme.color.orange }
 
         Repeater {
-            model: bar.workspaceCount
+            model: bar.workspaceIds
             Segment {
-                required property int index
-                readonly property int ws: index + 1
+                required property int modelData
+                readonly property int ws: modelData
                 Layout.preferredWidth: 44
                 Layout.fillHeight: true
                 label: "" + ws
-                fill: Hyprland.focusedWorkspace?.id === ws ? Theme.color.orange : Theme.color.periwinkle
+                // orange: shown on this screen; peach outline of focus when this
+                // screen isn't the focused one
+                fill: ws === bar.activeWs
+                      ? (Hyprland.focusedMonitor?.name === bar.screen?.name ? Theme.color.orange : Theme.color.peach)
+                      : Theme.color.periwinkle
                 onActivated: Hyprland.dispatch("workspace " + ws)
             }
         }
