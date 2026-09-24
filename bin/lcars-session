@@ -124,6 +124,7 @@ log "---- login (pid $$) ----"
 command -v Hyprland >/dev/null || start_ubuntu "Hyprland is not installed"
 
 export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=lcars DESKTOP_SESSION=lcars
+case ":$PATH:" in *":$HOME/.local/bin:"*) ;; *) export PATH="$HOME/.local/bin:$PATH" ;; esac
 pick_gpu
 
 while :; do

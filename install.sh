@@ -11,6 +11,9 @@
 #      moved aside first. The Antonio font is linked into ~/.local/share/fonts
 #   5. ~/.local/bin/lcars-session (symlink) and ~/.local/bin/lcars-rollback (copy,
 #      so rollback still works if this repo is moved or deleted)
+#   5b. Quickshell (the LCARS shell toolkit, not packaged for Ubuntu) is built from
+#      a pinned release into ~/.local; every installed file is recorded. Its build
+#      dependencies are ordinary apt packages, recorded like the others
 #   6. /usr/share/wayland-sessions/lcars.desktop — the only file outside $HOME
 #   7. Hyprland's runtime dirs (~/.local/share/hyprland, ~/.cache/hyprland) are
 #      recorded if they don't exist yet, so rollback can remove what Hyprland creates
@@ -19,6 +22,8 @@
 #   9. ~/.apport-ignore.xml gets entries for /usr/bin/Hyprland (0.53 segfaults on
 #      every exit) and for the session helpers that abort when the compositor
 #      goes away, which would otherwise pop up crash dialogs in the next GNOME session
+#  12. ~/.config/lcars (your custom sidebar menu) is recorded as user data: rollback
+#      moves it to ~/lcars-backups instead of deleting it
 #  11. The packaged user services for hyprpaper, hyprpolkitagent and mako are
 #      masked for this user (`systemctl --user mask`): the packages enable them for
 #      every graphical login, GNOME included. LCARS starts these tools itself.
@@ -35,17 +40,27 @@ STATE="${XDG_STATE_HOME:-$HOME/.local/state}/lcars"
 MANIFEST="$STATE/manifest"
 SESSION_FILE=/usr/share/wayland-sessions/lcars.desktop
 PACKAGES=(
-  hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpaper hyprpolkitagent
+  hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent
   grim slurp wl-clipboard brightnessctl playerctl
-  fuzzel mako-notifier            # stopgap launcher/notifications until Phase 3
+  fuzzel mako-notifier            # stopgap launcher/notifications
+  # Quickshell build and runtime dependencies
+  g++ git cmake ninja-build pkg-config spirv-tools libcli11-dev libjemalloc-dev
+  qt6-base-dev qt6-base-private-dev qt6-declarative-dev qt6-declarative-private-dev
+  qt6-shadertools-dev qt6-wayland-dev qt6-wayland-private-dev qt6-svg-dev
+  wayland-protocols libwayland-dev libdrm-dev libgbm-dev libegl-dev libpipewire-0.3-dev libglib2.0-dev
+  qml6-module-qtquick qml6-module-qtquick-layouts qml6-module-qtquick-window
+  qml6-module-qtqml-workerscript
 )
+QS_TAG=v0.3.1
+QS_REPO=https://github.com/quickshell-mirror/quickshell.git
+QS_BIN="$HOME/.local/bin/quickshell"
+USER_MENU_DIR="$HOME/.config/lcars"
 PKG_RECORD="$HOME/lcars-backups/lcars-packages.txt"   # survives rollback, for a later --purge
 RUNTIME_DIRS=("$HOME/.local/share/hyprland" "$HOME/.cache/hyprland")
 HIDE_SESSIONS=(/usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/hyprland-uwsm.desktop)
 APPORT_IGNORE="$HOME/.apport-ignore.xml"
-APPORT_PROGRAMS=(/usr/bin/Hyprland /usr/libexec/hyprpolkitagent /usr/bin/hyprpaper
-                 /usr/libexec/xdg-desktop-portal-hyprland)
-MASK_UNITS=(hyprpaper.service hyprpolkitagent.service mako.service)
+APPORT_PROGRAMS=(/usr/bin/Hyprland /usr/libexec/hyprpolkitagent /usr/libexec/xdg-desktop-portal-hyprland)
+MASK_UNITS=(hyprpolkitagent.service mako.service)
 FALLBACK_NOTICE="$HOME/.config/autostart/lcars-fallback-notice.desktop"   # written by lcars-session
 CONFIG_LINKS=(hypr fuzzel mako)   # ~/.config/<name> -> $REPO/<name>
 FONT_LINK="$HOME/.local/share/fonts/lcars"
@@ -99,6 +114,10 @@ if [ "${#missing[@]}" -gt 0 ]; then
   before="$(dpkg-query -W -f='${Package}\n' | LC_ALL=C sort)"
   # Wait for the dpkg lock (PackageKit or unattended-upgrades often hold it after boot)
   sudo apt-get -o DPkg::Lock::Timeout=300 update -qq
+  # Say so if apt must also upgrade packages you already have: rollback won't
+  # downgrade them (they're normally pending Ubuntu updates)
+  upgrades="$(apt-get -s install "${missing[@]}" 2>/dev/null | awk '/^Inst [^ ]+ \[/{print $2}' | tr '\n' ' ')"
+  [ -z "$upgrades" ] || say "Note: apt will also update these installed packages (kept on rollback): $upgrades"
   sudo apt-get -o DPkg::Lock::Timeout=300 install -y "${missing[@]}"
   after="$(dpkg-query -W -f='${Package}\n' | LC_ALL=C sort)"
   # Record every package that is new, including dependencies, for `lcars-rollback --purge`
@@ -146,6 +165,40 @@ link "$REPO/bin/lcars-session" "$HOME/.local/bin/lcars-session"
 install -m 755 "$REPO/bin/lcars-rollback" "$HOME/.local/bin/lcars-rollback"
 record "file	$HOME/.local/bin/lcars-rollback"
 say "Installed $HOME/.local/bin/lcars-rollback"
+
+# ---- 5b. Quickshell, built into ~/.local -------------------------------------
+if ! "$QS_BIN" --version 2>/dev/null | grep -q "Quickshell ${QS_TAG#v} "; then
+  say "Building Quickshell $QS_TAG into ~/.local (takes a few minutes)"
+  # Build on disk: /tmp is a size-limited tmpfs on Ubuntu 26.04
+  src="$HOME/.cache/lcars-build"
+  buildlog="$STATE/quickshell-build.log"
+  record_missing_dirs "$(dirname "$src")"
+  record "rundir	$src"
+  rm -rf "$src"; mkdir -p "$src"
+  # Snapshot ~/.local: CMake's install_manifest.txt misses some files (the qs
+  # link, the icon), so new files are found by comparing before and after
+  dirs_before="$(find "$HOME/.local" -xdev -type d 2>/dev/null | LC_ALL=C sort)"
+  files_before="$(find "$HOME/.local" -xdev ! -type d 2>/dev/null | LC_ALL=C sort)"
+  if ! { git -c advice.detachedHead=false clone -q --depth 1 --branch "$QS_TAG" "$QS_REPO" "$src/quickshell" &&
+         cmake -S "$src/quickshell" -B "$src/build" -G Ninja -DCMAKE_BUILD_TYPE=Release \
+           -DCMAKE_INSTALL_PREFIX="$HOME/.local" -DCRASH_HANDLER=OFF -DX11=OFF -DI3=OFF \
+           -DSERVICE_PAM=OFF -DSERVICE_POLKIT=OFF &&
+         cmake --build "$src/build" &&
+         cmake --install "$src/build"; } > "$buildlog" 2>&1; then
+    tail -n 30 "$buildlog" >&2
+    die "Quickshell build failed (full log: $buildlog). Nothing else was changed after this step; lcars-rollback undoes the rest."
+  fi
+  # Record new directories (parents first) and every installed file
+  LC_ALL=C comm -13 <(echo "$dirs_before") <(find "$HOME/.local" -xdev -type d | LC_ALL=C sort) |
+    while read -r d; do record "dir	$d"; done
+  LC_ALL=C comm -13 <(echo "$files_before") <(find "$HOME/.local" -xdev ! -type d | LC_ALL=C sort) |
+    while read -r f; do record "file	$f"; done
+  rm -rf "$src"
+  say "Installed $("$QS_BIN" --version | head -n1)"
+fi
+
+# ---- 12. the custom menu (created later by the sidebar, if ever) --------------
+[ -e "$USER_MENU_DIR" ] || record "userdata	$USER_MENU_DIR"
 
 # ---- 7. runtime dirs Hyprland will create ----------------------------------
 for d in "${RUNTIME_DIRS[@]}"; do

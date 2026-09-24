@@ -59,7 +59,7 @@ else
   while IFS=$'\t' read -r kind a b; do
     case "$kind" in
       link)    [ -L "$a" ] && act "remove symlink $a" rm "$a" ;;
-      file)    [ -e "$a" ] && act "remove $a" rm -f "$a" ;;
+      file)    { [ -e "$a" ] || [ -L "$a" ]; } && act "remove $a" rm -f "$a" ;;
       moved)   if [ -e "$b" ] || [ -L "$b" ]; then
                  if [ -e "$a" ] || [ -L "$a" ]; then
                    echo "SKIPPED: restore $a (something is in the way; backup kept at $b)" >&2
@@ -69,6 +69,10 @@ else
       sysfile) [ -e "$a" ] && act "remove $a (sudo)" sudo rm -f "$a" ;;
       dir)     [ -d "$a" ] && [ -z "$(ls -A "$a")" ] && act "remove empty dir $a" rmdir "$a" ;;
       rundir)  [ -e "$a" ] && act "remove runtime data $a" rm -rf "$a" ;;
+      userdata) if [ -e "$a" ]; then
+                 dest="$HOME/lcars-backups/$(basename "$a")-$(date +%Y%m%d-%H%M%S)"
+                 act "move your LCARS settings $a to $dest" mv "$a" "$dest"
+               fi ;;
       divert)  if dpkg-divert --list "$a" | grep -q .; then
                  act "restore $(basename "$a") to the login screen (sudo)" \
                    sudo dpkg-divert --local --rename --divert "$a.lcars-hidden" --remove "$a"
@@ -120,7 +124,7 @@ elif [ -d "$STATE" ]; then
 fi
 
 echo
-[ -d "$HOME/lcars-backups" ] && echo "Your ~/.config backups are kept in ~/lcars-backups/."
+[ -d "$HOME/lcars-backups" ] && echo "Your ~/.config backups and LCARS settings are kept in ~/lcars-backups/."
 if [ "$dry" -eq 1 ]; then echo "Dry run: nothing changed."
 else echo "Rollback finished: $changed changes, $failed problems."; fi
 [ "$failed" -eq 0 ]
