@@ -1,0 +1,13 @@
+#!/bin/sh
+# Usage: screenshot region|screen — save to ~/Pictures/Screenshots and copy to clipboard
+pictures="$(xdg-user-dir PICTURES 2>/dev/null)"
+# xdg-user-dir answers $HOME when no Pictures folder is configured
+[ -n "$pictures" ] && [ "$pictures" != "$HOME" ] || pictures="$HOME/Pictures"
+dir="$pictures/Screenshots"
+mkdir -p "$dir"
+file="$dir/$(date +%Y-%m-%d_%H-%M-%S).png"
+case "${1:-region}" in
+  region) geom="$(slurp)" || exit 0; grim -g "$geom" "$file" ;;
+  screen) grim "$file" ;;
+esac && wl-copy --type image/png < "$file" &&
+  notify-send -a LCARS -i "$file" "Screenshot saved" "$(basename "$file")"

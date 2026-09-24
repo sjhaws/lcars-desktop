@@ -1,0 +1,13 @@
+#!/bin/sh
+# Requested exit (Super+Shift+Esc, escape route 1).
+# 1. Tell lcars-session this was on purpose: Hyprland 0.53 segfaults while
+#    shutting down, so the exit status alone looks like a crash.
+# 2. Stop the session's helpers first; they abort if the compositor vanishes
+#    under them, which would leave crash reports for the next GNOME login.
+touch "$XDG_RUNTIME_DIR/lcars-exit-requested"
+pkill -x hyprpolkitagent
+pkill -x hyprpaper
+pkill -x mako
+systemctl --user stop xdg-desktop-portal-hyprland.service 2>/dev/null
+sleep 0.3
+exec hyprctl dispatch exit
