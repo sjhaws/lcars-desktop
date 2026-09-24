@@ -21,7 +21,9 @@
 | `Super+Tab` / `Super+Shift+Tab` | Next / previous tab in a group |
 | `Super+1…0` | Go to workspace 1–10 |
 | `Super+Shift+1…0` | Send window to workspace 1–10 |
-| `` Super+` `` | Previous workspace |
+| `Super+]` / `Super+[` | Next / previous workspace (also `Super+PgDn/PgUp` and `Super+Alt+→/←`, as in GNOME) |
+| `Super+Shift+]` / `Super+Shift+[` | Take the window to the next / previous workspace |
+| `` Super+` `` | Back to the last workspace you were on |
 | `Super+S` / `Super+Shift+S` | Show / send to the scratch workspace |
 | `Print` / `Shift+Print` | Screenshot of a region / whole screen → `~/Pictures/Screenshots` and clipboard |
 | Volume, mute, brightness, media keys | Work as labelled |
