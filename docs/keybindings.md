@@ -6,7 +6,7 @@
 | --- | --- |
 | `Super+Shift+Esc` | **Exit to the login screen** (escape route 1) |
 | `Super+Return` | Terminal |
-| `Super+Space` | App launcher (type to search, Enter to open, Esc to close) |
+| `Super+Space` | LCARS app launcher: type to search, ↑/↓ to choose, Enter to open, Esc to close |
 | `Super+B` / `Super+E` | Web browser / Files |
 | `Super+F1` / `Super+F2` | The sidebar's two custom buttons |
 | `Super+Q` | Close window |
@@ -33,13 +33,22 @@
 ## The sidebar
 
 Every sidebar segment is a button: Terminal, Browser, Files, Editor, Monitor, Settings,
-two custom buttons, Apps (the launcher) and Exit. The top bar's numbers switch
-workspaces and SOUND ON/OFF mutes.
+two custom buttons, Apps (the launcher) and Exit.
+
+The top bar's numbers switch workspaces (more appear when you use workspaces above 5).
+Its readouts show CPU, memory, network (WIFI / WIRED / VPN / OFFLINE, red when offline),
+battery on laptops (`+` while charging, red at 15 % or less on battery), stardate and time.
+The VOL block mutes on click and changes volume with the scroll wheel.
+
+Notifications appear top right: red cap = critical (stays until clicked), orange = normal,
+periwinkle = low. Click one to open it (if the app offers that) and dismiss it.
 
 **Custom buttons:** click an unset CUSTOM button. It opens your own copy of the menu
 (`~/.config/lcars/menu.json`) in Text Editor. Give it a `label` and a `command`, save,
 and the sidebar updates within two seconds. You can relabel, recolor or reorder any
 segment the same way. `lcars-rollback` keeps this file (it moves it to `~/lcars-backups`).
 
-Not yet: lock screen (Phase 4); notifications and launcher are still stopgaps (mako,
-fuzzel) styled from the palette.
+If the frame ever fails to start, a red notice appears at the top of the screen; the
+keyboard shortcuts above keep working. Details are in `~/.local/state/lcars/shell.log`.
+
+Not yet: lock screen, idle dimming and sounds (Phase 4).

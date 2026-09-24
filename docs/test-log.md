@@ -174,3 +174,51 @@ At Steven's request the VM user is now `captain` (display name "Captain"; passwo
 `lcars`). The old VM and its snapshots were deleted and the VM rebuilt from the ISO with
 `vm/create.sh`, then `vm/prepare.sh` (new: Timeshift install + configuration, all Ubuntu
 updates, `pre-deploy` snapshot), so the whole VM can now be rebuilt with two commands.
+
+## 2026-09-24 — Phase 3 (part 2): launcher, notifications, readouts, shell safety net
+
+### What was built
+
+- `shell/Launcher.qml`: LCARS launcher (elbow header "APPLICATIONS", search line, apps as LCARS
+  blocks with the match count in the elbow). Super+Space and the APPS segment toggle it through
+  Quickshell IPC; type to filter (name first, then generic name, comment, keywords), ↑/↓, Enter, Esc
+- `shell/Notifications.qml`: the shell is now the notification server. LCARS cards top right;
+  urgency sets the cap color; 8 s default timeout, critical stays until clicked; click runs the
+  default action and dismisses
+- `shell/SystemStats.qml` + top bar: CPU and memory (from `/proc`, every 2 s), network (NetworkManager
+  via `nmcli`, every 5 s), battery (UPower; hidden without a battery), volume (scroll to change,
+  click to mute). Workspace buttons grow past 5 when higher workspaces are in use
+- `hypr/scripts/shell`: starts the shell, restarts it after a crash, and after 3 failures in a
+  minute shows Hyprland's own on-screen error (works with no shell running); stops when the
+  session ends
+- Removed the fuzzel and mako stopgaps (packages, configs, templates); added `upower`
+- The menu footer (Apps, Exit) always comes from the defaults, so user copies of `menu.json`
+  can't point at a removed launcher
+
+### Problems found and fixed
+
+| Problem | Fix |
+| --- | --- |
+| `vm/sync.sh` copied the host's generated `colors.conf` (repo path `/home/steven/…`) into the VM (user `captain`) → shell couldn't start | Sync excludes `hypr/generated/` and regenerates in the VM. (Test tooling only; a real install generates in place.) Useful side effect: it exercised the failure notice |
+| VNC screenshots fail while virt-manager holds the display | `vm/screenshot.sh` falls back to `grim` inside the Hyprland session |
+| Launcher showed "CLOCKS / CLOCKS" | Hint hidden when the generic name equals the name |
+| Background job interrupted by a usage limit before its snapshot step | Re-ran the shutdown + `installed` snapshot by hand; install itself had finished (exit 0) |
+
+### Tests (VM, fresh install from `pre-deploy`)
+
+| Test | Result |
+| --- | --- |
+| Install | **PASS**: 225 packages recorded, fuzzel/mako not installed |
+| Frame + readouts (CPU, MEM, NET WIRED, stardate, clock, VOL; no battery in the VM) | **PASS** (screenshot) |
+| Launcher: Super+Space opens, "calc" filters to Calculator, Enter launches, Esc closes | **PASS** |
+| Notifications: normal / low / critical styles, click dismisses critical, others expire at 8 s | **PASS** |
+| Volume: 4 scroll steps 100 % → 80 %, click mutes | **PASS** |
+| Shell crash (SIGSEGV) → restarted in 1 s | **PASS** |
+| Shell failing to load → Hyprland red notice after 3 tries | **PASS** (seen during the sync bug) |
+| EXIT → GDM; no quickshell or shell script left; Ubuntu: no helpers, no crash files or dialogs | **PASS** |
+| `lcars-rollback --purge` | **PASS**: 28 changes, 0 problems; `/etc` and dpkg diversions identical; same three intended leftovers |
+
+### Still open in Phase 3
+
+Checkpoint "Looks and feels like LCARS" is Steven's call. Candidates for polish: bigger font in
+the failure notice (Hyprland's `fontsize:` seems ignored), network name (SSID) in the NET readout.
