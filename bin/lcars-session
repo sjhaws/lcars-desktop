@@ -13,7 +13,7 @@
 # Hyprland is started directly, not through upstream's start-hyprland watchdog:
 # start-hyprland restarts crashes in safe mode and then reports the second crash
 # as a clean exit, which would hide crashes from this guard. Instead, the exit
-# keybinding writes $EXIT_MARKER before exiting; Hyprland 0.53 can segfault while
+# keybinding (hypr/scripts/exit) writes $EXIT_MARKER before exiting; Hyprland 0.53 can segfault while
 # shutting down, so a requested exit is recognised by the marker, not the status.
 
 set -u

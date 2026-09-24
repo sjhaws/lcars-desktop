@@ -6,7 +6,9 @@
 #   1. Timeshift snapshot "Before LCARS install" (skip with --no-timeshift)
 #   2. Tarball of ~/.config in ~/lcars-backups/ (kept after rollback)
 #   3. apt packages listed in PACKAGES (only the newly installed ones are recorded)
-#   4. ~/.config/<dir> symlinks into this repo; existing dirs are moved aside first
+#   4. Themed files are generated from tokens/palette.json (tools/lcars-gen, inside
+#      the repo), then ~/.config/<dir> symlinks into this repo; existing dirs are
+#      moved aside first. The Antonio font is linked into ~/.local/share/fonts
 #   5. ~/.local/bin/lcars-session (symlink) and ~/.local/bin/lcars-rollback (copy,
 #      so rollback still works if this repo is moved or deleted)
 #   6. /usr/share/wayland-sessions/lcars.desktop — the only file outside $HOME
@@ -14,8 +16,12 @@
 #      recorded if they don't exist yet, so rollback can remove what Hyprland creates
 #   8. The stock "Hyprland" login entries are hidden with `dpkg-divert --local`,
 #      so the only way into Hyprland from GDM is the crash-guarded LCARS session
-#   9. ~/.apport-ignore.xml gets an entry for /usr/bin/Hyprland: Hyprland 0.53
-#      segfaults on every exit, which would otherwise pop up a crash dialog
+#   9. ~/.apport-ignore.xml gets entries for /usr/bin/Hyprland (0.53 segfaults on
+#      every exit) and for the session helpers that abort when the compositor
+#      goes away, which would otherwise pop up crash dialogs in the next GNOME session
+#  11. The packaged user services for hyprpaper, hyprpolkitagent and mako are
+#      masked for this user (`systemctl --user mask`): the packages enable them for
+#      every graphical login, GNOME included. LCARS starts these tools itself.
 #  10. The crash guard's one-time notice (~/.config/autostart/lcars-fallback-notice.desktop)
 #      is recorded so rollback removes it if it never got shown
 # It never touches GDM, GNOME or /etc, and does not make LCARS the default session.
@@ -28,13 +34,21 @@ REPO="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STATE="${XDG_STATE_HOME:-$HOME/.local/state}/lcars"
 MANIFEST="$STATE/manifest"
 SESSION_FILE=/usr/share/wayland-sessions/lcars.desktop
-PACKAGES=(hyprland xdg-desktop-portal-hyprland grim)
+PACKAGES=(
+  hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpaper hyprpolkitagent
+  grim slurp wl-clipboard brightnessctl playerctl
+  fuzzel mako-notifier            # stopgap launcher/notifications until Phase 3
+)
 PKG_RECORD="$HOME/lcars-backups/lcars-packages.txt"   # survives rollback, for a later --purge
 RUNTIME_DIRS=("$HOME/.local/share/hyprland" "$HOME/.cache/hyprland")
 HIDE_SESSIONS=(/usr/share/wayland-sessions/hyprland.desktop /usr/share/wayland-sessions/hyprland-uwsm.desktop)
 APPORT_IGNORE="$HOME/.apport-ignore.xml"
+APPORT_PROGRAMS=(/usr/bin/Hyprland /usr/libexec/hyprpolkitagent /usr/bin/hyprpaper
+                 /usr/libexec/xdg-desktop-portal-hyprland)
+MASK_UNITS=(hyprpaper.service hyprpolkitagent.service mako.service)
 FALLBACK_NOTICE="$HOME/.config/autostart/lcars-fallback-notice.desktop"   # written by lcars-session
-CONFIG_LINKS=(hypr)               # ~/.config/<name> -> $REPO/<name>
+CONFIG_LINKS=(hypr fuzzel mako)   # ~/.config/<name> -> $REPO/<name>
+FONT_LINK="$HOME/.local/share/fonts/lcars"
 
 timeshift=1 deploy=0
 for arg in "$@"; do
@@ -83,8 +97,9 @@ done
 if [ "${#missing[@]}" -gt 0 ]; then
   say "Installing packages: ${missing[*]}"
   before="$(dpkg-query -W -f='${Package}\n' | LC_ALL=C sort)"
-  sudo apt-get update -qq
-  sudo apt-get install -y "${missing[@]}"
+  # Wait for the dpkg lock (PackageKit or unattended-upgrades often hold it after boot)
+  sudo apt-get -o DPkg::Lock::Timeout=300 update -qq
+  sudo apt-get -o DPkg::Lock::Timeout=300 install -y "${missing[@]}"
   after="$(dpkg-query -W -f='${Package}\n' | LC_ALL=C sort)"
   # Record every package that is new, including dependencies, for `lcars-rollback --purge`
   LC_ALL=C comm -13 <(echo "$before") <(echo "$after") | while read -r p; do
@@ -110,10 +125,22 @@ link() {  # link TARGET LINKPATH
   record "link	$path"
   say "Linked $path -> $target"
 }
-mkdir_rec() { [ -d "$1" ] || { mkdir -p "$1"; record "dir	$1"; }; }
+# Record every missing directory from $1 up to $HOME (rollback removes them if empty)
+record_missing_dirs() {
+  local d="$1" missing=()
+  while [ "$d" != "$HOME" ] && [ ! -e "$d" ]; do missing=("$d" "${missing[@]}"); d="$(dirname "$d")"; done
+  for d in "${missing[@]}"; do record "dir	$d"; done
+}
+mkdir_rec() { record_missing_dirs "$1"; mkdir -p "$1"; }
+
+say "Generating themed files from tokens/palette.json"
+python3 "$REPO/tools/lcars-gen" >/dev/null
 
 mkdir_rec "$HOME/.config"
 for name in "${CONFIG_LINKS[@]}"; do link "$REPO/$name" "$HOME/.config/$name"; done
+mkdir_rec "$(dirname "$FONT_LINK")"
+link "$REPO/fonts" "$FONT_LINK"
+fc-cache -f "$(dirname "$FONT_LINK")" >/dev/null 2>&1 || true
 mkdir_rec "$HOME/.local/bin"
 link "$REPO/bin/lcars-session" "$HOME/.local/bin/lcars-session"
 install -m 755 "$REPO/bin/lcars-rollback" "$HOME/.local/bin/lcars-rollback"
@@ -123,11 +150,7 @@ say "Installed $HOME/.local/bin/lcars-rollback"
 # ---- 7. runtime dirs Hyprland will create ----------------------------------
 for d in "${RUNTIME_DIRS[@]}"; do
   [ -e "$d" ] && continue
-  # Parents that don't exist yet are removed later only if empty
-  parent="$(dirname "$d")"
-  missing=()
-  while [ "$parent" != "$HOME" ] && [ ! -e "$parent" ]; do missing=("$parent" "${missing[@]}"); parent="$(dirname "$parent")"; done
-  for m in "${missing[@]}"; do record "dir	$m"; done
+  record_missing_dirs "$(dirname "$d")"
   record "rundir	$d"
 done
 
@@ -140,12 +163,13 @@ for f in "${HIDE_SESSIONS[@]}"; do
   fi
 done
 
-# ---- 9. apport: ignore Hyprland's crash-on-exit ------------------------------
-# lcars-session still logs every real crash. mtime far in the future so the
-# entry keeps matching after Hyprland package upgrades.
-added="$(python3 - "$APPORT_IGNORE" <<'PY'
+# ---- 9. apport: ignore crashes caused by the compositor exiting --------------
+# lcars-session still logs every real Hyprland crash. mtime far in the future so
+# the entries keep matching after package upgrades.
+for prog in "${APPORT_PROGRAMS[@]}"; do
+  added="$(python3 - "$APPORT_IGNORE" "$prog" <<'PY'
 import os, sys, xml.dom.minidom as md
-path, prog = sys.argv[1], "/usr/bin/Hyprland"
+path, prog = sys.argv[1], sys.argv[2]
 dom = md.parse(path) if os.path.isfile(path) else md.parseString("<apport/>")
 if any(e.getAttribute("program") == prog for e in dom.getElementsByTagName("ignore")):
     print("no")
@@ -158,13 +182,25 @@ else:
     print("yes")
 PY
 )"
-if [ "$added" = yes ]; then
-  record "apportignore	/usr/bin/Hyprland"
-  say "Crash dialogs for Hyprland disabled in $APPORT_IGNORE"
-fi
+  if [ "$added" = yes ]; then
+    record "apportignore	$prog"
+    say "Crash dialogs for $(basename "$prog") disabled in $APPORT_IGNORE"
+  fi
+done
+
+# ---- 11. keep Hyprland helpers out of other sessions --------------------------
+record_missing_dirs "$HOME/.config/systemd/user"
+for unit in "${MASK_UNITS[@]}"; do
+  if [ "$(systemctl --user is-enabled "$unit" 2>/dev/null)" != masked ] &&
+     systemctl --user cat "$unit" >/dev/null 2>&1; then
+    systemctl --user mask "$unit" >/dev/null 2>&1
+    record "mask	$unit"
+    say "Masked user service $unit (LCARS starts it itself)"
+  fi
+done
 
 # ---- 10. crash-guard notice (created later by lcars-session, if ever) ---------
-[ -d "$(dirname "$FALLBACK_NOTICE")" ] || record "dir	$(dirname "$FALLBACK_NOTICE")"
+record_missing_dirs "$(dirname "$FALLBACK_NOTICE")"
 record "rundir	$FALLBACK_NOTICE"
 
 # ---- 6. login session entry ------------------------------------------------

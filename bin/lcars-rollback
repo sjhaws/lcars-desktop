@@ -23,6 +23,12 @@ done
 
 changed=0 failed=0
 
+# systemctl --user needs the user manager; from a bare console it may be missing
+unmask_unit() {
+  systemctl --user unmask "$1" 2>/dev/null ||
+    { rm -f "${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user/$1"; }
+}
+
 # Drop PROGRAM from ~/.apport-ignore.xml; delete the file if nothing else is left
 unignore_apport() {
   python3 - "$HOME/.apport-ignore.xml" "$1" <<'PY'
@@ -67,6 +73,9 @@ else
                  act "restore $(basename "$a") to the login screen (sudo)" \
                    sudo dpkg-divert --local --rename --divert "$a.lcars-hidden" --remove "$a"
                fi ;;
+      mask)    if [ "$(systemctl --user is-enabled "$a" 2>/dev/null)" = masked ]; then
+                 act "unmask user service $a" unmask_unit "$a"
+               fi ;;
       apportignore)
                [ -f "$HOME/.apport-ignore.xml" ] &&
                  act "remove $a from ~/.apport-ignore.xml" unignore_apport "$a" ;;
@@ -83,7 +92,7 @@ if [ "${#pkgs[@]}" -gt 0 ]; then
     installed=()
     for p in "${pkgs[@]}"; do dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q 'ok installed' && installed+=("$p"); done
     if [ "${#installed[@]}" -gt 0 ]; then
-      act "purge ${#installed[@]} packages: ${installed[*]}" sudo apt-get purge -y "${installed[@]}"
+      act "purge ${#installed[@]} packages: ${installed[*]}" sudo apt-get -o DPkg::Lock::Timeout=300 purge -y "${installed[@]}"
     fi
     [ "$failed" -eq 0 ] && [ -f "$PKG_RECORD" ] && act "remove package list $PKG_RECORD" rm -f "$PKG_RECORD"
   else
