@@ -4,7 +4,7 @@ colors, fonts and shape sizes).
 
 Templates are `*.in` files; `{{path.to.value}}` is replaced by the token value,
 with optional filters:
-    {{color.orange|hex}}      -> ff9900          (Hyprland rgb()/rgba(), fuzzel)
+    {{color.orange|hex}}      -> ff9900          (Hyprland rgb()/rgba())
     {{color.orange|#}}        -> #ff9900
     {{role.borderInactive|color|hex}}            role names resolve to a color
     {{role.borderInactiveAlpha|alpha}}  -> 73    (0..1 -> two hex digits)
@@ -20,8 +20,6 @@ REPO = Path(__file__).resolve().parent.parent
 TOKENS = json.loads((REPO / "tokens/palette.json").read_text())
 TEMPLATES = {  # template -> output (outputs are gitignored)
     "hypr/colors.conf.in": "hypr/generated/colors.conf",
-    "fuzzel/fuzzel.ini.in": "fuzzel/fuzzel.ini",
-    "mako/config.in": "mako/config",
 }
 
 

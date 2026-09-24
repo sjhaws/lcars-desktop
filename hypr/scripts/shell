@@ -1,0 +1,28 @@
+#!/bin/sh
+# Start the LCARS shell (sidebar, top bar, launcher, notifications) and keep it up.
+# - Crashes are restarted.
+# - If it fails 3 times within a minute (for example a QML error after an edit),
+#   Hyprland's own on-screen notice explains how to carry on without it; that
+#   notice works even when the shell and its notifications are down.
+# - It stops when the session is ending (the exit marker exists or Hyprland is gone).
+shell="${1:?usage: shell <path to lcars-desktop/shell>}"
+log="${XDG_STATE_HOME:-$HOME/.local/state}/lcars/shell.log"
+marker="$XDG_RUNTIME_DIR/lcars-exit-requested"
+mkdir -p "$(dirname "$log")"
+fails=""
+while :; do
+  echo "$(date '+%F %T') starting quickshell" >> "$log"
+  "$HOME/.local/bin/quickshell" -p "$shell" >> "$log" 2>&1
+  rc=$?
+  [ -e "$marker" ] && exit 0
+  hyprctl version >/dev/null 2>&1 || exit 0
+  now=$(date +%s)
+  echo "$(date '+%F %T') quickshell exited ($rc)" >> "$log"
+  fails="$(for t in $fails $now; do [ "$t" -gt $((now - 60)) ] && echo "$t"; done)"
+  if [ "$(echo "$fails" | wc -w)" -ge 3 ]; then
+    hyprctl notify 3 600000 "rgb(cc6666)" \
+      "fontsize:18 LCARS frame failed to start. Super+Return: terminal, Super+Shift+Esc: exit. Details: ~/.local/state/lcars/shell.log" >/dev/null
+    exit 1
+  fi
+  sleep 1
+done

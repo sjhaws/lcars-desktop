@@ -24,7 +24,7 @@
 #      goes away, which would otherwise pop up crash dialogs in the next GNOME session
 #  12. ~/.config/lcars (your custom sidebar menu) is recorded as user data: rollback
 #      moves it to ~/lcars-backups instead of deleting it
-#  11. The packaged user services for hyprpaper, hyprpolkitagent and mako are
+#  11. The packaged user service for hyprpolkitagent (and mako, if present) is
 #      masked for this user (`systemctl --user mask`): the packages enable them for
 #      every graphical login, GNOME included. LCARS starts these tools itself.
 #  10. The crash guard's one-time notice (~/.config/autostart/lcars-fallback-notice.desktop)
@@ -42,7 +42,6 @@ SESSION_FILE=/usr/share/wayland-sessions/lcars.desktop
 PACKAGES=(
   hyprland xdg-desktop-portal-hyprland xdg-desktop-portal-gtk hyprpolkitagent
   grim slurp wl-clipboard brightnessctl playerctl
-  fuzzel mako-notifier            # stopgap launcher/notifications
   # Quickshell build and runtime dependencies
   g++ git cmake ninja-build pkg-config spirv-tools libcli11-dev libjemalloc-dev
   qt6-base-dev qt6-base-private-dev qt6-declarative-dev qt6-declarative-private-dev
@@ -50,6 +49,7 @@ PACKAGES=(
   wayland-protocols libwayland-dev libdrm-dev libgbm-dev libegl-dev libpipewire-0.3-dev libglib2.0-dev
   qml6-module-qtquick qml6-module-qtquick-layouts qml6-module-qtquick-window
   qml6-module-qtqml-workerscript
+  upower                          # battery readout (already on laptops)
 )
 QS_TAG=v0.3.1
 QS_REPO=https://github.com/quickshell-mirror/quickshell.git
@@ -62,7 +62,7 @@ APPORT_IGNORE="$HOME/.apport-ignore.xml"
 APPORT_PROGRAMS=(/usr/bin/Hyprland /usr/libexec/hyprpolkitagent /usr/libexec/xdg-desktop-portal-hyprland)
 MASK_UNITS=(hyprpolkitagent.service mako.service)
 FALLBACK_NOTICE="$HOME/.config/autostart/lcars-fallback-notice.desktop"   # written by lcars-session
-CONFIG_LINKS=(hypr fuzzel mako)   # ~/.config/<name> -> $REPO/<name>
+CONFIG_LINKS=(hypr)               # ~/.config/<name> -> $REPO/<name>
 FONT_LINK="$HOME/.local/share/fonts/lcars"
 
 timeshift=1 deploy=0

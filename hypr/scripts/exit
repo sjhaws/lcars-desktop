@@ -6,8 +6,7 @@
 #    under them, which would leave crash reports for the next GNOME login.
 touch "$XDG_RUNTIME_DIR/lcars-exit-requested"
 pkill -x hyprpolkitagent
-pkill -x mako
-pkill -x quickshell; pkill -x qs
+pkill -x quickshell      # the shell script sees the marker and doesn't restart it
 systemctl --user stop xdg-desktop-portal-hyprland.service 2>/dev/null
 sleep 0.3
 exec hyprctl dispatch exit
