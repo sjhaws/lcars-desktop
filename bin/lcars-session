@@ -1,0 +1,136 @@
+#!/usr/bin/env bash
+# lcars-session — crash-guard wrapper that GDM runs for the "LCARS" session.
+#
+# Starts Hyprland, unless one of these is true, in which case it starts the
+# stock Ubuntu (GNOME) session instead and leaves a note in ~/LCARS-NOTE.txt:
+#   * ~/.lcars-off exists                          (escape route 4)
+#   * Hyprland has crashed 3 times within 5 minutes (escape route 2)
+# A crash inside a login restarts Hyprland until that limit is hit. A hang counts
+# as a crash: if Hyprland stops answering IPC for ~30 s it is killed, because a
+# frozen Wayland compositor also blocks Ctrl+Alt+F3 (escape route 3).
+# A requested exit (Super+Shift+Esc) ends the session and returns to the login screen.
+#
+# Hyprland is started directly, not through upstream's start-hyprland watchdog:
+# start-hyprland restarts crashes in safe mode and then reports the second crash
+# as a clean exit, which would hide crashes from this guard. Instead, the exit
+# keybinding writes $EXIT_MARKER before exiting; Hyprland 0.53 can segfault while
+# shutting down, so a requested exit is recognised by the marker, not the status.
+
+set -u
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/lcars"
+LOG="$STATE/session.log"
+CRASHES="$STATE/crashes"          # one epoch timestamp per crash
+NOTE="$HOME/LCARS-NOTE.txt"
+EXIT_MARKER="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/lcars-exit-requested"
+MAX_CRASHES=3
+WINDOW=300                        # seconds
+HANG_CHECK=5                      # seconds between IPC pings
+HANG_LIMIT=6                      # missed pings in a row before Hyprland is killed
+mkdir -p "$STATE"
+
+log() { printf '%s %s\n' "$(date '+%F %T')" "$*" >> "$LOG"; }
+
+recent_crashes() {
+  local now; now=$(date +%s)
+  [ -f "$CRASHES" ] || { echo 0; return; }
+  awk -v now="$now" -v w="$WINDOW" '$1 > now - w' "$CRASHES" | wc -l
+}
+
+start_ubuntu() {
+  local why="$1"
+  log "fallback to Ubuntu session: $why"
+  cat > "$NOTE" <<NOTE
+LCARS did not start at $(date '+%F %T').
+Reason: $why
+
+You are in the stock Ubuntu session instead.
+- To try LCARS again: rm -f ~/.lcars-off $CRASHES   then log out and pick "LCARS".
+- To remove LCARS completely: lcars-rollback
+- Session log: $LOG
+NOTE
+  # Present ourselves as the stock "ubuntu" session so GNOME loads its normal mode
+  export XDG_CURRENT_DESKTOP=ubuntu:GNOME XDG_SESSION_DESKTOP=ubuntu DESKTOP_SESSION=ubuntu
+  export GNOME_SHELL_SESSION_MODE=ubuntu
+  unset HYPRLAND_INSTANCE_SIGNATURE AQ_DRM_DEVICES
+  systemctl --user import-environment XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
+    DESKTOP_SESSION GNOME_SHELL_SESSION_MODE 2>/dev/null
+  dbus-update-activation-environment --systemd XDG_CURRENT_DESKTOP XDG_SESSION_DESKTOP \
+    DESKTOP_SESSION GNOME_SHELL_SESSION_MODE 2>/dev/null
+  exec /usr/bin/gnome-session --session=ubuntu
+}
+
+# Hybrid graphics: render on the NVIDIA card when it has a monitor connected
+# (docked), otherwise on the integrated GPU. No-op in a VM or single-GPU machine.
+pick_gpu() {
+  local card drv igpu="" dgpu="" docked=0
+  for card in /sys/class/drm/card[0-9]; do
+    [ -e "$card/device/driver" ] || continue
+    drv=$(basename "$(readlink -f "$card/device/driver")")
+    case "$drv" in
+      nvidia) dgpu="/dev/dri/$(basename "$card")"
+              grep -qx connected "$card"-*/status 2>/dev/null && docked=1 ;;
+      i915|xe|amdgpu) [ -z "$igpu" ] && igpu="/dev/dri/$(basename "$card")" ;;
+    esac
+  done
+  [ -n "$igpu" ] && [ -n "$dgpu" ] || return 0
+  if [ "$docked" = 1 ]; then export AQ_DRM_DEVICES="$dgpu:$igpu"
+  else export AQ_DRM_DEVICES="$igpu"; fi
+  log "hybrid graphics: docked=$docked AQ_DRM_DEVICES=$AQ_DRM_DEVICES"
+}
+
+# Kill Hyprland (pid $1) if it stops answering IPC. Runs in the background.
+watch_hang() {
+  local pid="$1" dir="" lock missed=0
+  for _ in $(seq 60); do           # find this instance's socket dir
+    for lock in "$XDG_RUNTIME_DIR"/hypr/*/hyprland.lock; do
+      [ "$(head -n1 "$lock" 2>/dev/null)" = "$pid" ] && dir="$(dirname "$lock")"
+    done
+    [ -n "$dir" ] && break
+    kill -0 "$pid" 2>/dev/null || return
+    sleep 1
+  done
+  [ -n "$dir" ] || { log "hang watchdog: no IPC socket for pid $pid; not watching"; return; }
+  while kill -0 "$pid" 2>/dev/null; do
+    sleep "$HANG_CHECK"
+    if HYPRLAND_INSTANCE_SIGNATURE="$(basename "$dir")" timeout 3 hyprctl version >/dev/null 2>&1; then
+      missed=0
+    else
+      missed=$((missed + 1))
+      if [ "$missed" -ge "$HANG_LIMIT" ]; then
+        log "Hyprland (pid $pid) not responding for $((missed * HANG_CHECK))s; killing it"
+        kill -KILL "$pid" 2>/dev/null
+        return
+      fi
+    fi
+  done
+}
+
+log "---- login (pid $$) ----"
+[ -e "$HOME/.lcars-off" ] && start_ubuntu "$HOME/.lcars-off exists"
+command -v Hyprland >/dev/null || start_ubuntu "Hyprland is not installed"
+
+export XDG_CURRENT_DESKTOP=Hyprland XDG_SESSION_DESKTOP=lcars DESKTOP_SESSION=lcars
+pick_gpu
+
+while :; do
+  n=$(recent_crashes)
+  [ "$n" -ge "$MAX_CRASHES" ] && start_ubuntu "Hyprland crashed $n times in the last $((WINDOW / 60)) minutes"
+
+  rm -f "$EXIT_MARKER"
+  log "starting Hyprland"
+  Hyprland >> "$STATE/hyprland.log" 2>&1 &
+  hpid=$!
+  watch_hang "$hpid" &
+  wpid=$!
+  wait "$hpid"
+  rc=$?
+  kill "$wpid" 2>/dev/null; wait "$wpid" 2>/dev/null
+  if [ -e "$EXIT_MARKER" ] || [ "$rc" -eq 0 ]; then
+    rm -f "$EXIT_MARKER"
+    log "Hyprland exited on request (exit $rc); ending session"
+    exit 0
+  fi
+  date +%s >> "$CRASHES"
+  log "Hyprland crashed (exit $rc)"
+  sleep 1
+done

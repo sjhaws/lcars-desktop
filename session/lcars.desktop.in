@@ -1,0 +1,6 @@
+[Desktop Entry]
+Name=LCARS
+Comment=LCARS desktop (Hyprland). Falls back to Ubuntu if it cannot start.
+Exec=@LCARS_SESSION@
+Type=Application
+DesktopNames=Hyprland

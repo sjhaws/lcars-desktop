@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# lcars-rollback — undo everything install.sh did, using its manifest.
+# Works from a text console (Ctrl+Alt+F3) or over SSH; needs no graphical session.
+#
+# Usage: lcars-rollback [--purge] [--dry-run]
+#   --purge    also remove the packages install.sh added
+#   --dry-run  print what would change, change nothing
+
+set -uo pipefail
+STATE="${XDG_STATE_HOME:-$HOME/.local/state}/lcars"
+MANIFEST="$STATE/manifest"
+PKG_RECORD="$HOME/lcars-backups/lcars-packages.txt"   # written by install.sh
+purge=0 dry=0
+for arg in "$@"; do
+  case "$arg" in
+    --purge) purge=1 ;;
+    --dry-run|-n) dry=1 ;;
+    -h|--help) sed -n '2,/^$/s/^# \{0,1\}//p' "$0"; exit 0 ;;
+    *) echo "Unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+[ "$(id -u)" -ne 0 ] || { echo "Run as your normal user, not root." >&2; exit 1; }
+
+changed=0 failed=0
+act() {  # act DESCRIPTION COMMAND...
+  local what="$1"; shift
+  if [ "$dry" -eq 1 ]; then echo "would: $what"; return; fi
+  if "$@"; then echo "done:  $what"; changed=$((changed + 1))
+  else echo "FAILED: $what" >&2; failed=$((failed + 1)); fi
+}
+
+pkgs=()
+if [ ! -f "$MANIFEST" ]; then
+  echo "No LCARS install manifest at $MANIFEST — no files recorded to undo."
+else
+  # Undo in reverse order of installation
+  while IFS=$'\t' read -r kind a b; do
+    case "$kind" in
+      link)    [ -L "$a" ] && act "remove symlink $a" rm "$a" ;;
+      file)    [ -e "$a" ] && act "remove $a" rm -f "$a" ;;
+      moved)   if [ -e "$b" ] || [ -L "$b" ]; then
+                 if [ -e "$a" ] || [ -L "$a" ]; then
+                   echo "SKIPPED: restore $a (something is in the way; backup kept at $b)" >&2
+                   failed=$((failed + 1))
+                 else act "restore $a from backup" mv "$b" "$a"; fi
+               fi ;;
+      sysfile) [ -e "$a" ] && act "remove $a (sudo)" sudo rm -f "$a" ;;
+      dir)     [ -d "$a" ] && [ -z "$(ls -A "$a")" ] && act "remove empty dir $a" rmdir "$a" ;;
+      rundir)  [ -e "$a" ] && act "remove Hyprland runtime data $a" rm -rf "$a" ;;
+      pkg)     pkgs+=("$a") ;;
+    esac
+  done < <(tac "$MANIFEST")
+
+fi
+
+# Packages: from the manifest, or from the saved list if an earlier rollback ran
+if [ "${#pkgs[@]}" -eq 0 ] && [ -f "$PKG_RECORD" ]; then mapfile -t pkgs < "$PKG_RECORD"; fi
+if [ "${#pkgs[@]}" -gt 0 ]; then
+  if [ "$purge" -eq 1 ]; then
+    installed=()
+    for p in "${pkgs[@]}"; do dpkg-query -W -f='${Status}' "$p" 2>/dev/null | grep -q 'ok installed' && installed+=("$p"); done
+    if [ "${#installed[@]}" -gt 0 ]; then
+      act "purge ${#installed[@]} packages: ${installed[*]}" sudo apt-get purge -y "${installed[@]}"
+    fi
+    [ "$failed" -eq 0 ] && [ -f "$PKG_RECORD" ] && act "remove package list $PKG_RECORD" rm -f "$PKG_RECORD"
+  else
+    echo "kept:  ${#pkgs[@]} packages installed by LCARS (rerun with --purge to remove them)"
+  fi
+fi
+
+# Next login defaults to the stock Ubuntu session (GDM remembers the last one used)
+uid="$(id -u)"
+current="$(busctl get-property org.freedesktop.Accounts "/org/freedesktop/Accounts/User$uid" \
+           org.freedesktop.Accounts.User Session 2>/dev/null | awk '{gsub(/"/,"",$2); print $2}')"
+if [ -n "$current" ] && [ "$current" != ubuntu ]; then
+  act "set default login session to Ubuntu (was $current)" \
+    sudo busctl call org.freedesktop.Accounts "/org/freedesktop/Accounts/User$uid" \
+      org.freedesktop.Accounts.User SetSession s ubuntu
+fi
+
+# Runtime leftovers: the off switch, crash-guard note, logs and the manifest itself
+[ -e "$HOME/.lcars-off" ] && act "remove ~/.lcars-off" rm -f "$HOME/.lcars-off"
+[ -e "$HOME/LCARS-NOTE.txt" ] && act "remove ~/LCARS-NOTE.txt" rm -f "$HOME/LCARS-NOTE.txt"
+if [ "$failed" -eq 0 ] && [ -d "$STATE" ]; then
+  act "remove LCARS state and logs ($STATE)" rm -rf "$STATE"
+elif [ -d "$STATE" ]; then
+  echo "kept:  $STATE (some steps failed; manifest kept so you can rerun)"
+fi
+
+echo
+[ -d "$HOME/lcars-backups" ] && echo "Your ~/.config backups are kept in ~/lcars-backups/."
+if [ "$dry" -eq 1 ]; then echo "Dry run: nothing changed."
+else echo "Rollback finished: $changed changes, $failed problems."; fi
+[ "$failed" -eq 0 ]
