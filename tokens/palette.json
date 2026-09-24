@@ -1,0 +1,17 @@
+{
+  "color": {
+    "background": "#000000",
+    "orange": "#FF9900",
+    "peach": "#FFCC99",
+    "lavender": "#CC99CC",
+    "periwinkle": "#9999FF",
+    "red": "#CC6666",
+    "textOnColor": "#000000",
+    "textOnBlack": "#FFCC99"
+  },
+  "font": {
+    "family": "Antonio",
+    "weight": 600,
+    "size": 18
+  }
+}
